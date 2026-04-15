@@ -71,6 +71,105 @@ body::before {
 }
 .container { max-width:1100px; margin:0 auto; position:relative; z-index:1; }
 
+/* ===== LOGIN ===== */
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 32px 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--glow);
+  text-align: center;
+  animation: popIn 0.4s ease;
+}
+.login-card h2 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff, var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.login-card p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+}
+.login-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--surface2);
+  padding: 4px;
+  border-radius: var(--radius);
+}
+.login-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 4px);
+  transition: all 0.2s;
+}
+.login-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.login-input {
+  margin-bottom: 20px;
+  text-align: right;
+}
+.login-input label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.login-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px;
+  width: 100%;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(124,107,255,0.3);
+}
+.login-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+}
+.error-msg {
+  color: var(--red);
+  font-size: 0.8rem;
+  margin-top: 16px;
+  min-height: 24px;
+}
+
+/* ===== APP (Hidden by default) ===== */
+#app-main {
+  display: none;
+}
+
 /* ===== HEADER ===== */
 .app-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -256,7 +355,7 @@ select option { background:var(--surface2); }
 @media(min-width:601px){
   .modal-panel { height:88vh; border-radius:26px; border:1px solid var(--border2); }
 }
-#settle-modal .modal-panel, #add-savings-modal .modal-panel { height:auto; max-width:420px; border-radius:26px; }
+#settle-modal .modal-panel, #add-savings-modal .modal-panel, #user-credentials-modal .modal-panel, #staff-modal .modal-panel, #add-staff-modal .modal-panel { height:auto; max-width:420px; border-radius:26px; }
 
 .back-btn {
   display:flex; align-items:center; gap:6px; color:var(--muted);
@@ -379,6 +478,19 @@ select option { background:var(--surface2); }
 .section-label { font-size:0.68rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:0 2px; margin-bottom:8px; margin-top:4px; display:flex; align-items:center; gap:6px; }
 .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
 
+/* ===== PERMISSION CHECKBOX ===== */
+.permission-group { background: var(--surface3); border-radius: var(--radius); padding: 12px; margin-bottom: 16px; }
+.permission-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.permission-item:last-child { border-bottom: none; }
+.permission-item label { flex: 1; font-size: 0.8rem; cursor: pointer; }
+.permission-item input[type="checkbox"] { width: 20px; height: 20px; min-height: 20px; accent-color: var(--accent); cursor: pointer; }
+
+.staff-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.staff-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(96,165,250,0.12); display: flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; }
+.staff-info { flex: 1; }
+.staff-name { font-weight: 700; font-size: 0.9rem; }
+.staff-meta { font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -440,6 +552,30 @@ input, textarea, select { font-size: 0.88rem !important; }
 <body>
 <div class="toast-container" id="toast-container"></div>
 
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen" class="login-wrapper">
+  <div class="login-card">
+    <h2>OPERA STORE</h2>
+    <p>تسجيل الدخول للوحة التحكم</p>
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-admin" onclick="switchLoginTab('admin')">مدير</button>
+      <button class="login-tab" id="tab-staff" onclick="switchLoginTab('staff')">موظف</button>
+    </div>
+    <div class="login-input">
+      <label>👤 اسم المستخدم</label>
+      <input type="text" id="login-username" placeholder="أدخل اسم المستخدم" value="">
+    </div>
+    <div class="login-input">
+      <label>🔒 كلمة المرور</label>
+      <input type="password" id="login-password" placeholder="********" value="">
+    </div>
+    <button class="login-btn" onclick="attemptLogin()">دخول</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app-main">
 <div class="container">
   <!-- HEADER -->
   <div class="app-header">
@@ -448,9 +584,10 @@ input, textarea, select { font-size: 0.88rem !important; }
       <p id="header-date"></p>
     </div>
     <div class="header-actions">
-      <div class="icon-btn" onclick="openM('backup-modal')">DATA</div>
+      <button class="icon-btn" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i> خروج</button>
+      <div class="icon-btn" id="data-btn" onclick="openM('backup-modal')">DATA</div>
       <div class="icon-btn" id="theme-btn" onclick="toggleTheme()">نهاري</div>
-      <div class="icon-btn" onclick="exportPDF()">PDF</div>
+      <div class="icon-btn" id="pdf-btn" onclick="exportPDF()">PDF</div>
     </div>
   </div>
 
@@ -461,9 +598,9 @@ input, textarea, select { font-size: 0.88rem !important; }
     <span class="close-alert" onclick="event.stopPropagation();document.getElementById('alert-banner').classList.remove('show')">x</span>
   </div>
 
-  <!-- STATS BAR -->
-  <div class="stats-bar">
-    <div class="stat-pill" onclick="openM('report-modal')">
+  <!-- STATS BAR (حساس - يظهر فقط للمدير) -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-pill" id="stat-remaining" onclick="if(currentUser.isAdmin) openM('report-modal')">
       <span class="lbl">المتبقي بالخارج</span>
       <span class="val" id="top-remaining" style="color:var(--red)">0</span>
       <div class="mini-progress"><div class="mini-progress-fill" id="progress-remaining" style="background:var(--red)"></div></div>
@@ -473,7 +610,7 @@ input, textarea, select { font-size: 0.88rem !important; }
       <span class="val" id="top-overdue" style="color:var(--orange)">0</span>
       <div class="mini-progress"><div class="mini-progress-fill" id="progress-overdue" style="background:var(--orange)"></div></div>
     </div>
-    <div class="stat-pill" onclick="openLogs()">
+    <div class="stat-pill" id="stat-collected" onclick="if(currentUser.isAdmin) openLogs()">
       <span class="lbl">المحصل الفعلي</span>
       <span class="val" id="top-collected" style="color:var(--green)">0</span>
       <div class="mini-progress"><div class="mini-progress-fill" id="progress-collected" style="background:var(--green)"></div></div>
@@ -492,8 +629,8 @@ input, textarea, select { font-size: 0.88rem !important; }
       <button class="day-btn" onclick="filterByDay(20)">20</button>
       <button class="day-btn" onclick="filterByDay(30)">30</button>
     </div>
-    <button class="chip-btn accent" onclick="openM('add-modal')">+ اضافة</button>
-    <button class="chip-btn" style="color:var(--orange)" onclick="openM('report-modal')">تقرير</button>
+    <button class="chip-btn accent" id="add-cust-btn" onclick="openM('add-modal')">+ اضافة</button>
+    <button class="chip-btn" style="color:var(--orange)" id="report-btn" onclick="openM('report-modal')">تقرير</button>
     <button class="chip-btn" onclick="openM('menu-modal')">المزيد</button>
   </div>
 
@@ -523,15 +660,88 @@ input, textarea, select { font-size: 0.88rem !important; }
     <button class="menu-btn" onclick="openArchive()"><i class="fa-solid fa-box-archive" style="color:var(--accent2)"></i> الأرشيف</button>
     <button class="menu-btn" onclick="openOffers()"><i class="fa-solid fa-bullhorn" style="color:var(--orange)"></i> العروض والترويج</button>
     <button class="menu-btn" onclick="openCustomMsgs()"><i class="fa-solid fa-comment-dots" style="color:var(--green)"></i> رسائل مخصصة</button>
-    <button class="menu-btn" onclick="openLogs()"><i class="fa-solid fa-receipt" style="color:var(--blue)"></i> سجل العمليات</button>
+    <button class="menu-btn" id="menu-logs-btn" onclick="openLogs()"><i class="fa-solid fa-receipt" style="color:var(--blue)"></i> سجل العمليات</button>
     <button class="menu-btn" onclick="showOverdueList()">
       <i class="fa-solid fa-clock-rotate-left" style="color:var(--red)"></i> قائمة المتأخرين
       <span id="overdue-badge" class="badge" style="background:rgba(248,113,113,0.15);color:var(--red)"></span>
     </button>
-    <button class="menu-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf" style="color:var(--orange)"></i> تصدير تقرير PDF</button>
-    <button class="menu-btn" onclick="openTrash()"><i class="fa-solid fa-trash-can" style="color:var(--red)"></i> سلة المهملات
+    <button class="menu-btn" id="menu-pdf-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf" style="color:var(--orange)"></i> تصدير تقرير PDF</button>
+    <button class="menu-btn" id="menu-trash-btn" onclick="openTrash()"><i class="fa-solid fa-trash-can" style="color:var(--red)"></i> سلة المهملات
       <span id="trash-badge" class="badge" style="background:rgba(248,113,113,0.15);color:var(--red)"></span>
     </button>
+    <button class="menu-btn" id="menu-staff-btn" onclick="openStaffModal()"><i class="fa-solid fa-users-gear" style="color:var(--blue)"></i> إدارة الموظفين</button>
+    <button class="menu-btn" id="menu-creds-btn" onclick="openCredentialsModal()"><i class="fa-solid fa-user-lock" style="color:var(--accent2)"></i> المستخدم</button>
+  </div>
+</div>
+
+<!-- ===== USER CREDENTIALS MODAL ===== -->
+<div class="modal-overlay" id="user-credentials-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeM('user-credentials-modal')">رجوع</div>
+    <div class="modal-title">تغيير بيانات الدخول (مدير)</div>
+    <div class="field">
+      <label>👤 اسم المستخدم الجديد</label>
+      <input type="text" id="new-username" placeholder="admin">
+    </div>
+    <div class="field">
+      <label>🔒 كلمة المرور الجديدة</label>
+      <input type="password" id="new-password" placeholder="****">
+    </div>
+    <button class="btn btn-green" onclick="changeCredentials()"><i class="fa-solid fa-check"></i> حفظ التغييرات</button>
+  </div>
+</div>
+
+<!-- ===== STAFF MANAGEMENT MODAL ===== -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeToMenu('staff-modal')">رجوع</div>
+    <div class="modal-title">إدارة الموظفين</div>
+    <button class="btn btn-green" style="margin-bottom:20px" onclick="openAddStaffModal()">
+      <i class="fa-solid fa-user-plus"></i> إضافة موظف جديد
+    </button>
+    <div id="staff-list-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-staff-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeM('add-staff-modal')">إلغاء</div>
+    <div class="modal-title" id="staff-modal-title">إضافة موظف جديد</div>
+    <input type="hidden" id="edit-staff-id" value="">
+    <div class="form-grid">
+      <div class="field"><label>اسم الموظف</label><input type="text" id="staff-name" placeholder="الاسم"></div>
+      <div class="field"><label>اسم المستخدم</label><input type="text" id="staff-username" placeholder="للدخول"></div>
+    </div>
+    <div class="permission-group">
+      <div class="permission-item">
+        <label>👁️ عرض العملاء والمتأخرين</label>
+        <input type="checkbox" id="perm-view" checked>
+      </div>
+      <div class="permission-item">
+        <label>💰 تسجيل دفعات وسداد مبكر</label>
+        <input type="checkbox" id="perm-pay" checked>
+      </div>
+      <div class="permission-item">
+        <label>📱 إرسال رسائل واتساب</label>
+        <input type="checkbox" id="perm-wa" checked>
+      </div>
+      <div class="permission-item">
+        <label>✏️ تعديل بيانات العملاء</label>
+        <input type="checkbox" id="perm-edit">
+      </div>
+      <div class="permission-item">
+        <label>➕ إضافة عملاء جدد</label>
+        <input type="checkbox" id="perm-add">
+      </div>
+      <div class="permission-item">
+        <label>🗑️ حذف أو أرشفة عملاء</label>
+        <input type="checkbox" id="perm-delete">
+      </div>
+    </div>
+    <p style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:12px">
+      كلمة المرور الافتراضية: 1234 (يمكن تغييرها من قبل الموظف لاحقاً)
+    </p>
+    <button class="btn btn-green" onclick="saveStaffMember()"><i class="fa-solid fa-check"></i> حفظ الموظف</button>
   </div>
 </div>
 
@@ -755,7 +965,7 @@ input, textarea, select { font-size: 0.88rem !important; }
       <button id="btn-wa-report" class="contact-btn" style="background:var(--accent);color:#fff">تقرير</button>
     </div>
 
-    <div class="pay-box">
+    <div class="pay-box" id="payment-box">
       <span class="lbl">تسجيل تحصيل جديد</span>
       <div class="pay-grid">
         <input type="number" id="payment-amount" placeholder="المبلغ">
@@ -768,11 +978,11 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div class="section-label">سجل الدفعات</div>
     <div id="payment-history"></div>
 
-    <div class="actions-grid">
-      <button class="ghost-btn" style="border:1px solid var(--orange);color:var(--orange)" onclick="openM('settle-modal')"><i class="fa-solid fa-handshake"></i> سداد مبكر</button>
-      <button class="ghost-btn" style="border:1px solid var(--blue);color:var(--blue)" onclick="openEditModal()"><i class="fa-solid fa-pen"></i> تعديل</button>
+    <div class="actions-grid" id="cust-actions-grid">
+      <button class="ghost-btn" id="btn-settle" style="border:1px solid var(--orange);color:var(--orange)" onclick="openM('settle-modal')"><i class="fa-solid fa-handshake"></i> سداد مبكر</button>
+      <button class="ghost-btn" id="btn-edit" style="border:1px solid var(--blue);color:var(--blue)" onclick="openEditModal()"><i class="fa-solid fa-pen"></i> تعديل</button>
       <button id="btn-archive-cust" class="ghost-btn" style="border:1px solid var(--accent2);color:var(--accent2)" onclick="archiveCustomer()"><i class="fa-solid fa-box-archive"></i> أرشيف</button>
-      <button class="ghost-btn" style="border:1px solid var(--red);color:var(--red)" onclick="deleteCust(activeCustomerId)"><i class="fa-solid fa-trash"></i> حذف</button>
+      <button class="ghost-btn" id="btn-delete" style="border:1px solid var(--red);color:var(--red)" onclick="deleteCust(activeCustomerId)"><i class="fa-solid fa-trash"></i> حذف</button>
     </div>
   </div>
 </div>
@@ -781,7 +991,7 @@ input, textarea, select { font-size: 0.88rem !important; }
 <div class="modal-overlay" id="report-modal">
   <div class="modal-panel">
     <div class="back-btn" onclick="closeM('report-modal')">رجوع</div>
-    <div class="modal-title">التقرير المالي</div>
+    <div class="modal-title">التقرير المالي (المدير فقط)</div>
     <div id="report-active-filter" style="text-align:center;margin-bottom:12px;color:var(--accent2);font-size:0.8rem;font-weight:700"></div>
     <div class="report-grid" id="report-stats-grid"></div>
   </div>
@@ -837,8 +1047,267 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div id="trash-content"></div>
   </div>
 </div>
+</div>
 
 <script>
+// ===== AUTHENTICATION & PERMISSIONS =====
+let USER_CREDENTIALS = { username: 'admin', password: '4321' };
+const AUTH_KEY = 'opera_user_creds';
+const STAFF_KEY = 'opera_staff_v1';
+
+// Default staff permissions
+let staffMembers = JSON.parse(localStorage.getItem(STAFF_KEY)) || [];
+
+// Current session
+let currentUser = { username: 'admin', isAdmin: true, permissions: null };
+
+function loadCredentials() {
+  const saved = localStorage.getItem(AUTH_KEY);
+  if(saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if(parsed.username && parsed.password) USER_CREDENTIALS = parsed;
+    } catch(e) {}
+  }
+}
+loadCredentials();
+
+function switchLoginTab(type) {
+  document.getElementById('tab-admin').classList.toggle('active', type === 'admin');
+  document.getElementById('tab-staff').classList.toggle('active', type === 'staff');
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+  if(type === 'admin') {
+    document.getElementById('login-username').placeholder = 'admin';
+  } else {
+    document.getElementById('login-username').placeholder = 'اسم المستخدم';
+  }
+}
+
+function attemptLogin() {
+  const u = document.getElementById('login-username').value.trim();
+  const p = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  const isAdminTab = document.getElementById('tab-admin').classList.contains('active');
+  
+  if(isAdminTab) {
+    if(u === USER_CREDENTIALS.username && p === USER_CREDENTIALS.password) {
+      currentUser = { username: u, isAdmin: true, permissions: null };
+      loginSuccess();
+    } else {
+      err.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة';
+    }
+  } else {
+    const staff = staffMembers.find(s => s.username === u);
+    if(staff) {
+      if(p === '1234' || p === staff.password) {
+        if(p === '1234' && !staff.passwordChanged) {
+          // First login, allow
+        }
+        currentUser = { username: u, isAdmin: false, permissions: staff.permissions, staffId: staff.id, staffName: staff.name };
+        loginSuccess();
+      } else {
+        err.textContent = '❌ كلمة المرور غير صحيحة';
+      }
+    } else {
+      err.textContent = '❌ اسم المستخدم غير موجود';
+    }
+  }
+}
+
+function loginSuccess() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+  document.getElementById('login-error').textContent = '';
+  applyPermissions();
+  if(!window.appInitialized) {
+    initApp();
+    window.appInitialized = true;
+  } else {
+    render();
+    setHeaderDate();
+  }
+  showToast(`مرحباً ${currentUser.isAdmin ? 'مدير' : currentUser.staffName || currentUser.username}`, 'success', 'fa-hand-peace');
+}
+
+function logout() {
+  currentUser = { username: '', isAdmin: false, permissions: null };
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-username').focus();
+}
+
+function applyPermissions() {
+  const isAdmin = currentUser.isAdmin;
+  const perms = currentUser.permissions || {};
+  
+  // إخفاء/إظهار الأزرار حسب الصلاحيات
+  document.getElementById('data-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('report-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-logs-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-pdf-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-trash-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-staff-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-creds-btn').style.display = isAdmin ? 'flex' : 'none';
+  
+  // إحصائيات حساسة
+  if(!isAdmin) {
+    document.getElementById('stat-remaining').onclick = null;
+    document.getElementById('stat-collected').onclick = null;
+  }
+  
+  // صلاحيات الموظف
+  if(!isAdmin) {
+    const addBtn = document.getElementById('add-cust-btn');
+    const editBtn = document.getElementById('btn-edit');
+    const deleteBtn = document.getElementById('btn-delete');
+    const archiveBtn = document.getElementById('btn-archive-cust');
+    const settleBtn = document.getElementById('btn-settle');
+    const paymentBox = document.getElementById('payment-box');
+    
+    if(addBtn) addBtn.style.display = perms.canAdd ? 'flex' : 'none';
+    if(!perms.canEdit) {
+      if(editBtn) editBtn.style.display = 'none';
+    }
+    if(!perms.canDelete) {
+      if(deleteBtn) deleteBtn.style.display = 'none';
+      if(archiveBtn) archiveBtn.style.display = 'none';
+    }
+    if(!perms.canPay) {
+      if(paymentBox) paymentBox.style.display = 'none';
+      if(settleBtn) settleBtn.style.display = 'none';
+    }
+  }
+}
+
+function hasPermission(action) {
+  if(currentUser.isAdmin) return true;
+  if(!currentUser.permissions) return false;
+  return currentUser.permissions[action] || false;
+}
+
+// ===== STAFF MANAGEMENT =====
+function openStaffModal() {
+  closeM('menu-modal');
+  renderStaffList();
+  openM('staff-modal');
+}
+
+function renderStaffList() {
+  const el = document.getElementById('staff-list-content');
+  el.innerHTML = '';
+  if(!staffMembers.length) {
+    el.innerHTML = '<div class="empty"><i class="fa-solid fa-users"></i><p>لا يوجد موظفين</p></div>';
+    return;
+  }
+  staffMembers.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'staff-card';
+    card.innerHTML = `
+      <div class="staff-icon"><i class="fa-solid fa-user-tie"></i></div>
+      <div class="staff-info">
+        <div class="staff-name">${s.name}</div>
+        <div class="staff-meta">@${s.username} | ${s.permissions.canPay ? 'تحصيل' : ''} ${s.permissions.canAdd ? 'إضافة' : ''}</div>
+      </div>
+      <button class="btn-sm" style="background:var(--blue);color:#fff;margin-right:4px" onclick="editStaff(${s.id})"><i class="fa-solid fa-pen"></i></button>
+      <button class="btn-sm btn-del" onclick="deleteStaff(${s.id})"><i class="fa-solid fa-trash"></i></button>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function openAddStaffModal() {
+  document.getElementById('staff-modal-title').textContent = 'إضافة موظف جديد';
+  document.getElementById('edit-staff-id').value = '';
+  document.getElementById('staff-name').value = '';
+  document.getElementById('staff-username').value = '';
+  document.getElementById('perm-view').checked = true;
+  document.getElementById('perm-pay').checked = true;
+  document.getElementById('perm-wa').checked = true;
+  document.getElementById('perm-edit').checked = false;
+  document.getElementById('perm-add').checked = false;
+  document.getElementById('perm-delete').checked = false;
+  openM('add-staff-modal');
+}
+
+function editStaff(id) {
+  const s = staffMembers.find(x => x.id === id);
+  if(!s) return;
+  document.getElementById('staff-modal-title').textContent = 'تعديل بيانات الموظف';
+  document.getElementById('edit-staff-id').value = id;
+  document.getElementById('staff-name').value = s.name;
+  document.getElementById('staff-username').value = s.username;
+  document.getElementById('perm-view').checked = s.permissions.canView || false;
+  document.getElementById('perm-pay').checked = s.permissions.canPay || false;
+  document.getElementById('perm-wa').checked = s.permissions.canWA || false;
+  document.getElementById('perm-edit').checked = s.permissions.canEdit || false;
+  document.getElementById('perm-add').checked = s.permissions.canAdd || false;
+  document.getElementById('perm-delete').checked = s.permissions.canDelete || false;
+  openM('add-staff-modal');
+}
+
+function saveStaffMember() {
+  const id = document.getElementById('edit-staff-id').value;
+  const name = document.getElementById('staff-name').value.trim();
+  const username = document.getElementById('staff-username').value.trim();
+  
+  if(!name || !username) {
+    showToast('يرجى ملء جميع الحقول', 'error', 'fa-exclamation-circle');
+    return;
+  }
+  
+  // Check duplicate username
+  const existing = staffMembers.find(s => s.username === username && s.id != id);
+  if(existing) {
+    showToast('اسم المستخدم موجود مسبقاً', 'error', 'fa-exclamation-circle');
+    return;
+  }
+  
+  const permissions = {
+    canView: document.getElementById('perm-view').checked,
+    canPay: document.getElementById('perm-pay').checked,
+    canWA: document.getElementById('perm-wa').checked,
+    canEdit: document.getElementById('perm-edit').checked,
+    canAdd: document.getElementById('perm-add').checked,
+    canDelete: document.getElementById('perm-delete').checked
+  };
+  
+  if(id) {
+    const idx = staffMembers.findIndex(s => s.id == id);
+    if(idx !== -1) {
+      staffMembers[idx] = { ...staffMembers[idx], name, username, permissions };
+    }
+  } else {
+    staffMembers.push({
+      id: Date.now(),
+      name,
+      username,
+      password: '1234',
+      passwordChanged: false,
+      permissions,
+      createdAt: new Date().toISOString()
+    });
+  }
+  
+  localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+  closeM('add-staff-modal');
+  renderStaffList();
+  showToast('تم حفظ بيانات الموظف بنجاح');
+}
+
+function deleteStaff(id) {
+  if(confirm('حذف هذا الموظف نهائياً؟')) {
+    staffMembers = staffMembers.filter(s => s.id !== id);
+    localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+    renderStaffList();
+    showToast('تم حذف الموظف');
+  }
+}
+
+// ===== APP LOGIC =====
 let customers = JSON.parse(localStorage.getItem('inst_manager_v2_data')) || [];
 let savingsAccounts = JSON.parse(localStorage.getItem('savings_v2_data')) || [];
 let trashItems = JSON.parse(localStorage.getItem('opera_trash_v1')) || [];
@@ -849,7 +1318,6 @@ let activeTrashTab = 'custs';
 const fmt = n => Number(n).toLocaleString('en-US');
 const fmtDate = s => { if(!s) return ""; const d = new Date(s); return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`; };
 
-// ===== THEME =====
 function toggleTheme() {
   const isLight = document.body.dataset.theme === 'light';
   if(isLight) {
@@ -865,7 +1333,6 @@ function toggleTheme() {
   render();
 }
 
-// ===== TOAST =====
 function showToast(msg, type='success', icon='fa-check-circle') {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -875,7 +1342,6 @@ function showToast(msg, type='success', icon='fa-check-circle') {
   setTimeout(() => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, 2500);
 }
 
-// ===== HEADER DATE =====
 function setHeaderDate() {
   const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const months = ['يناير','فبراير','مارس','إبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -883,13 +1349,11 @@ function setHeaderDate() {
   document.getElementById('header-date').textContent = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// ===== SORT =====
 function setSort(s) {
   currentSort = s;
   document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
   const el = document.getElementById('sort-' + s.replace('-','_').replace('-','_'));
   if(el) el.classList.add('active');
-  // find by id
   document.querySelectorAll('.sort-chip').forEach(c => {
     if(c.id === 'sort-' + s) c.classList.add('active');
   });
@@ -912,7 +1376,6 @@ function sortCustomers(arr) {
   return a;
 }
 
-// ===== SEARCH =====
 function onSearch() {
   const q = document.getElementById('search').value;
   document.getElementById('search-clear').classList.toggle('show', q.length > 0);
@@ -924,7 +1387,6 @@ function clearSearch() {
   render();
 }
 
-// ===== SAVINGS =====
 function openSavingsModal() {
   closeM('menu-modal');
   renderSavingsList();
@@ -1011,6 +1473,10 @@ function processSavingsOp() {
 }
 
 function sendSavWA(accId, opIdx) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock');
+    return;
+  }
   const acc = savingsAccounts.find(x => x.id === accId);
   const op = acc.ops[opIdx];
   const balance = acc.ops.reduce((s,o) => s + (o.type==='in' ? o.amount : -o.amount), 0);
@@ -1019,6 +1485,10 @@ function sendSavWA(accId, opIdx) {
 }
 
 function sendSavingsFullReport(accId) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock');
+    return;
+  }
   const acc = savingsAccounts.find(x => x.id === accId);
   const balance = acc.ops.reduce((s,o) => s + (o.type==='in' ? o.amount : -o.amount), 0);
   let history = '';
@@ -1043,7 +1513,6 @@ function saveSavings() {
   updateBackupField();
 }
 
-// ===== CALC =====
 function autoCalc() {
   const t = parseFloat(document.getElementById('inst-total').value) || 0;
   const d = parseFloat(document.getElementById('down-payment').value) || 0;
@@ -1085,7 +1554,6 @@ function getCardStatus(c) {
   return 'warn';
 }
 
-// ===== MAIN RENDER =====
 function render() {
   const list = document.getElementById('customers-list');
   const q = document.getElementById('search').value.toLowerCase();
@@ -1138,12 +1606,10 @@ function render() {
 
   if(!shown) list.innerHTML = '<div class="empty"><i class="fa-solid fa-inbox"></i><p>لا يوجد عملاء حالياً</p></div>';
 
-  // Stats
-  document.getElementById('top-remaining').innerText = fmt(totalRem);
+  document.getElementById('top-remaining').innerText = currentUser.isAdmin ? fmt(totalRem) : '---';
   document.getElementById('top-overdue').innerText = fmt(totalOD);
-  document.getElementById('top-collected').innerText = fmt(colNet);
+  document.getElementById('top-collected').innerText = currentUser.isAdmin ? fmt(colNet) : '---';
 
-  // Progress bars in stats
   const totalContract = mktNet;
   if(totalContract > 0) {
     document.getElementById('progress-remaining').style.width = Math.min(100, (totalRem/totalContract)*100) + '%';
@@ -1151,7 +1617,6 @@ function render() {
     document.getElementById('progress-collected').style.width = Math.min(100, (colNet/totalContract)*100) + '%';
   }
 
-  // Overdue alert banner
   if(overdueCount > 0) {
     document.getElementById('alert-text').textContent = `تنبيه: ${overdueCount} عميل لديهم متأخرات — اضغط لعرض القائمة`;
     document.getElementById('alert-banner').classList.add('show');
@@ -1159,39 +1624,42 @@ function render() {
     document.getElementById('alert-banner').classList.remove('show');
   }
 
-  // Overdue badge in menu
   const ob = document.getElementById('overdue-badge');
   if(ob) ob.textContent = overdueCount > 0 ? overdueCount : '';
 
-  // Report
-  document.getElementById('report-active-filter').innerText = currentDayFilter ? `نتائج عملاء يوم: ${currentDayFilter}` : 'النتائج الإجمالية لكافة العملاء';
-  let totalSP=0, totalIP=0;
-  customers.forEach(c => {
-    totalSP += (c.sell>0) ? (c.sell-c.buy) : 0;
-    let bip = (c.sell>0) ? (c.total-c.sell) : (c.total-c.buy);
-    totalIP += (bip-(c.earlyDiscount||0));
-  });
-  const stats = [
-    {l:'إجمالي السوق',v:mktNet,sub:mktNet-totalD,c:'var(--blue)'},
-    {l:'المحصل الفعلي',v:colNet,c:'var(--green)'},
-    {l:'إجمالي التكلفة',v:totalCost,c:'#64748b'},
-    {l:'المتبقي في الخارج',v:totalRem,c:'var(--pink)'},
-    {l:'الأقساط الشهرية',v:totalMR,c:'#2dd4bf'},
-    {l:'المتأخر المطلوب',v:totalOD,c:'var(--red)',click:'showOverdueList()'},
-    {l:'إجمالي المقدمات',v:totalD,c:'var(--orange)'},
-    {l:'أرباح البيع',v:totalSP,c:'#22d3ee'},
-    {l:'أرباح التقسيط',v:totalIP,c:'var(--accent2)'},
-    {l:'إجمالي الربح',v:totalSP+totalIP,c:'var(--green)'}
-  ];
-  document.getElementById('report-stats-grid').innerHTML = stats.map(s => {
-    const subHtml = s.sub!==undefined ? `<div class="sub">الصافي: ${fmt(s.sub)}</div>` : '';
-    return `<div class="rep-card" style="border-top-color:${s.c}${s.click?';cursor:pointer':''}" ${s.click?`onclick="${s.click}"`:''}>
-      <span class="lbl">${s.l}</span><span class="val">${fmt(s.v)}</span>${subHtml}</div>`;
-  }).join('');
+  if(currentUser.isAdmin) {
+    document.getElementById('report-active-filter').innerText = currentDayFilter ? `نتائج عملاء يوم: ${currentDayFilter}` : 'النتائج الإجمالية لكافة العملاء';
+    let totalSP=0, totalIP=0;
+    customers.forEach(c => {
+      totalSP += (c.sell>0) ? (c.sell-c.buy) : 0;
+      let bip = (c.sell>0) ? (c.total-c.sell) : (c.total-c.buy);
+      totalIP += (bip-(c.earlyDiscount||0));
+    });
+    const stats = [
+      {l:'إجمالي السوق',v:mktNet,sub:mktNet-totalD,c:'var(--blue)'},
+      {l:'المحصل الفعلي',v:colNet,c:'var(--green)'},
+      {l:'إجمالي التكلفة',v:totalCost,c:'#64748b'},
+      {l:'المتبقي في الخارج',v:totalRem,c:'var(--pink)'},
+      {l:'الأقساط الشهرية',v:totalMR,c:'#2dd4bf'},
+      {l:'المتأخر المطلوب',v:totalOD,c:'var(--red)',click:'showOverdueList()'},
+      {l:'إجمالي المقدمات',v:totalD,c:'var(--orange)'},
+      {l:'أرباح البيع',v:totalSP,c:'#22d3ee'},
+      {l:'أرباح التقسيط',v:totalIP,c:'var(--accent2)'},
+      {l:'إجمالي الربح',v:totalSP+totalIP,c:'var(--green)'}
+    ];
+    document.getElementById('report-stats-grid').innerHTML = stats.map(s => {
+      const subHtml = s.sub!==undefined ? `<div class="sub">الصافي: ${fmt(s.sub)}</div>` : '';
+      return `<div class="rep-card" style="border-top-color:${s.c}${s.click?';cursor:pointer':''}" ${s.click?`onclick="${s.click}"`:''}>
+        <span class="lbl">${s.l}</span><span class="val">${fmt(s.v)}</span>${subHtml}</div>`;
+    }).join('');
+  }
 }
 
-// ===== CUSTOMER ACTIONS =====
 function saveCustomer() {
+  if(!hasPermission('canAdd') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإضافة عملاء', 'error', 'fa-lock');
+    return;
+  }
   const n = document.getElementById('cust-name').value, it = document.getElementById('inst-total').value;
   if(!n || !it) { showToast('برجاء إكمال الاسم وإجمالي القسط','error','fa-exclamation-circle'); return; }
   const c = {
@@ -1214,6 +1682,10 @@ function saveCustomer() {
 }
 
 function openEditModal() {
+  if(!hasPermission('canEdit') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للتعديل', 'error', 'fa-lock');
+    return;
+  }
   const c = customers.find(x => x.id === activeCustomerId); if(!c) return;
   const map = {'edit-cust-name':c.name,'edit-cust-phone':c.phone,'edit-prod-name':c.prod,'edit-receive-date':c.receiveDate,'edit-due-day':c.dueDay,'edit-monthly-val':c.monthly,'edit-buy-price':c.buy||0,'edit-sell-price':c.sell||0,'edit-inst-total':c.total||0,'edit-down-payment':c.down||0};
   Object.entries(map).forEach(([id,val]) => { const el=document.getElementById(id); if(el) el.value=val; });
@@ -1221,6 +1693,10 @@ function openEditModal() {
 }
 
 function updateCustomerInfo() {
+  if(!hasPermission('canEdit') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للتعديل', 'error', 'fa-lock');
+    return;
+  }
   const c = customers.find(x => x.id === activeCustomerId); if(!c) return;
   c.name=document.getElementById('edit-cust-name').value; c.phone=document.getElementById('edit-cust-phone').value;
   c.prod=document.getElementById('edit-prod-name').value; c.receiveDate=document.getElementById('edit-receive-date').value;
@@ -1243,7 +1719,6 @@ function openPaymentModal(id) {
   const status = getCardStatus(c);
   const pct = itc > 0 ? Math.min(100, Math.round((paid/itc)*100)) : 0;
 
-  // Status badge
   const badge = document.getElementById('modal-status-badge');
   const statusMap = {ok:['منتظم','rgba(52,211,153,0.15)','var(--green)'],warn:['تاخير بسيط','rgba(251,146,60,0.15)','var(--orange)'],bad:['متاخر','rgba(248,113,113,0.15)','var(--red)'],done:['مكتمل','rgba(107,107,138,0.15)','var(--muted)']};
   const [sl, sbg, sc] = statusMap[status] || statusMap.ok;
@@ -1260,7 +1735,6 @@ function openPaymentModal(id) {
   document.getElementById('modal-due-now').innerText = fmt(due);
   document.getElementById('modal-remaining-total').innerText = fmt(rem);
 
-  // Progress
   document.getElementById('modal-progress-pct').innerText = pct + '%';
   const progBar = document.getElementById('modal-progress-bar');
   progBar.style.width = pct + '%';
@@ -1269,13 +1743,23 @@ function openPaymentModal(id) {
   document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('payment-note').value = '';
   document.getElementById('btn-call-cust').onclick = () => window.open(`tel:${c.phone}`);
-  document.getElementById('btn-wa-remind').onclick = () => remindDirectly(c.id);
-  document.getElementById('btn-wa-alert').onclick = () => alertUpcomingDue(c.id);
-  document.getElementById('btn-archive-cust').style.display = c.archived ? 'none' : 'flex';
+  document.getElementById('btn-wa-remind').onclick = () => { if(hasPermission('canWA')||currentUser.isAdmin) remindDirectly(c.id); else showToast('ليس لديك صلاحية', 'error', 'fa-lock'); };
+  document.getElementById('btn-wa-alert').onclick = () => { if(hasPermission('canWA')||currentUser.isAdmin) alertUpcomingDue(c.id); else showToast('ليس لديك صلاحية', 'error', 'fa-lock'); };
+  document.getElementById('btn-archive-cust').style.display = (hasPermission('canDelete')||currentUser.isAdmin) ? (c.archived ? 'none' : 'flex') : 'none';
   document.getElementById('btn-wa-report').onclick = () => {
+    if(!hasPermission('canWA') && !currentUser.isAdmin) { showToast('ليس لديك صلاحية', 'error', 'fa-lock'); return; }
     let h = ''; c.payments.forEach(p => { h += `مبلغ ${p.amount} بتاريخ ${p.date} ${p.note||''}%0A`; });
     window.open(`https://wa.me/2${c.phone}?text=تقرير حساب العميل%0Aالعميل: ${c.name}%0Aالمنتج: (${c.prod})%0A------%0Aسجل المعاملات:%0A${h||'لا توجد دفعات%0A'}------%0Aإجمالي المدفوع: ${fmt(paid)} ج.م%0Aإجمالي المتبقي: ${fmt(itc-paid)} ج.م%0Aالمطلوب: ${fmt(due)} ج.م للتواصل: 01009144655`,'_blank');
   };
+  
+  // Show/hide payment box based on permission
+  const paymentBox = document.getElementById('payment-box');
+  if(!hasPermission('canPay') && !currentUser.isAdmin) {
+    paymentBox.style.display = 'none';
+  } else {
+    paymentBox.style.display = 'block';
+  }
+  
   document.getElementById('payment-history').innerHTML = c.payments.map((p,idx) => `
     <div class="pay-row">
       <div style="font-weight:700;color:var(--green)">${fmt(p.amount)}</div>
@@ -1283,13 +1767,17 @@ function openPaymentModal(id) {
       <div style="font-size:0.65rem;color:var(--muted)">${p.date}</div>
       <div style="display:flex;gap:4px;justify-content:flex-end">
         <button class="btn-sm btn-wa" onclick="sendWA('${c.phone}','${c.name}',${p.amount},${itc-paid})">إيصال</button>
-        <button class="btn-sm btn-del" onclick="deletePayment(${idx})">حذف</button>
+        ${(hasPermission('canDelete')||currentUser.isAdmin) ? `<button class="btn-sm btn-del" onclick="deletePayment(${idx})">حذف</button>` : ''}
       </div>
     </div>`).reverse().join('') || '<div class="empty" style="padding:20px"><i class="fa-solid fa-receipt"></i><p>لا توجد دفعات</p></div>';
   openM('payment-modal');
 }
 
 function processEarlySettlement() {
+  if(!hasPermission('canPay') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للتحصيل', 'error', 'fa-lock');
+    return;
+  }
   const amt = parseFloat(document.getElementById('settle-amount').value);
   if(!amt || amt<=0) { showToast('برجاء إدخال مبلغ صحيح','error','fa-exclamation-circle'); return; }
   const c = customers.find(x => x.id === activeCustomerId); if(!c) return;
@@ -1304,6 +1792,10 @@ function processEarlySettlement() {
 }
 
 function processPayment() {
+  if(!hasPermission('canPay') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للتحصيل', 'error', 'fa-lock');
+    return;
+  }
   const amt = parseFloat(document.getElementById('payment-amount').value);
   if(!amt || amt<=0) { showToast('برجاء إدخال مبلغ','error','fa-exclamation-circle'); return; }
   const c = customers.find(x => x.id === activeCustomerId);
@@ -1317,6 +1809,10 @@ function processPayment() {
 }
 
 function deletePayment(idx) {
+  if(!hasPermission('canDelete') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للحذف', 'error', 'fa-lock');
+    return;
+  }
   if(confirm('نقل هذه الدفعة لسلة المهملات؟')) {
     const c = customers.find(x => x.id === activeCustomerId);
     const p = c.payments[idx];
@@ -1328,10 +1824,18 @@ function deletePayment(idx) {
 }
 
 function sendWA(phone,name,amount,rem) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock');
+    return;
+  }
   window.open(`https://wa.me/2${phone}?text=OPERA STORE%0Aإيصال قسط%0Aالعميل: ${name}%0Aتم استلام: ${amount} ج.م%0Aالمتبقي: ${rem} ج.م%0A-------------------------%0Aللتواصل: 01009144655%0Aشكراً لتعاملكم معنا.`,'_blank');
 }
 
 function deleteCust(id) {
+  if(!hasPermission('canDelete') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للحذف', 'error', 'fa-lock');
+    return;
+  }
   if(confirm('نقل هذا العميل لسلة المهملات؟')) {
     const c = customers.find(x => x.id === id);
     if(!c) return;
@@ -1343,13 +1847,16 @@ function deleteCust(id) {
 }
 
 function archiveCustomer() {
+  if(!hasPermission('canDelete') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية للأرشفة', 'error', 'fa-lock');
+    return;
+  }
   const c = customers.find(x => x.id === activeCustomerId); if(!c) return;
   const paid = c.payments.reduce((s,p) => s+p.amount, 0);
   if((c.total-c.down-(c.earlyDiscount||0))-paid > 0) { showToast('لا يمكن أرشفة عميل لم يسدد كامل المديونية!','error','fa-lock'); return; }
   if(confirm('نقل العميل للأرشيف؟')) { c.archived=true; c.lastActionDate=Date.now(); save(); closeM('payment-modal'); render(); showToast('تم نقل العميل للأرشيف'); }
 }
 
-// ===== ARCHIVE =====
 function openArchive() {
   closeM('menu-modal');
   const el = document.getElementById('archive-list-content'); el.innerHTML = ''; let cnt=0;
@@ -1366,7 +1873,6 @@ function openArchive() {
   openM('archive-modal');
 }
 
-// ===== COLLECTIONS =====
 function openCollections() { closeM('menu-modal'); openM('collections-modal'); filterCollections('due'); }
 
 function filterCollections(type) {
@@ -1393,7 +1899,6 @@ function filterCollections(type) {
   if(!el.innerHTML) el.innerHTML = '<div class="empty"><i class="fa-solid fa-check-double"></i><p>لا يوجد بيانات في هذا القسم</p></div>';
 }
 
-// ===== PRODUCTS =====
 function openProductsModal() {
   closeM('menu-modal');
   const el = document.getElementById('products-list-content'), q = (document.getElementById('product-search').value||'').toLowerCase();
@@ -1409,8 +1914,10 @@ function openProductsModal() {
   openM('products-modal');
 }
 
-// ===== LOGS =====
-function openLogs() { closeM('menu-modal'); openM('logs-modal'); renderLogs(); }
+function openLogs() { 
+  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه عرض السجل', 'error', 'fa-lock'); return; }
+  closeM('menu-modal'); openM('logs-modal'); renderLogs(); 
+}
 
 function renderLogs() {
   const el = document.getElementById('logs-content'), q = document.getElementById('log-search').value.toLowerCase();
@@ -1427,7 +1934,6 @@ function renderLogs() {
   </div>`).join('') || '<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><p>لا توجد نتائج</p></div>';
 }
 
-// ===== OVERDUE =====
 function showOverdueList() {
   closeM('menu-modal');
   const el = document.getElementById('overdue-list-content'); el.innerHTML = ''; let cnt=0;
@@ -1446,13 +1952,20 @@ function showOverdueList() {
   openM('overdue-modal');
 }
 
-// ===== WA =====
 function remindDirectly(id) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock');
+    return;
+  }
   const c = customers.find(x => x.id===id), due = calculateDueAmount(c), late = c.monthly>0?Math.ceil(due/c.monthly):0;
   window.open(`https://wa.me/2${c.phone}?text=العميل: ${c.name}،%0Aنود تذكيركم بمبلغ ${fmt(due)} ج.م%0Aمستحق عن (${late}) قسط متأخر.%0Aيرجى السداد في أقرب وقت.`,'_blank');
 }
 
 function alertUpcomingDue(id) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock');
+    return;
+  }
   const c = customers.find(x => x.id===id); if(!c) return;
   const now = new Date(); now.setHours(0,0,0,0);
   let t = new Date(now.getFullYear(), now.getMonth(), c.dueDay);
@@ -1461,7 +1974,6 @@ function alertUpcomingDue(id) {
   window.open(`https://wa.me/2${c.phone}?text=العميل: ${c.name}%0Aتنبيه بموعد القسط القادم لـ (${c.prod})%0Aبتاريخ ${t.getDate()}/${t.getMonth()+1}/${t.getFullYear()} (متبقي ${diff} يومًا)%0Aقيمة القسط: ${fmt(c.monthly)} ج.م%0Aومتأخرات سابقة: ${fmt(due)} ج.م`,'_blank');
 }
 
-// ===== OFFERS =====
 function openOffers() {
   closeM('menu-modal');
   const el = document.getElementById('offers-customers-list'); el.innerHTML='';
@@ -1475,12 +1987,15 @@ function openOffers() {
 }
 
 function sendOffer(phone) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية', 'error', 'fa-lock');
+    return;
+  }
   const t = document.getElementById('offer-title').value||'عرض خاص', d = document.getElementById('offer-details').value;
   if(!d) { showToast('برجاء كتابة تفاصيل العرض','error','fa-exclamation-circle'); return; }
   window.open(`https://wa.me/2${phone}?text=*${t}*%0A%0A${d}`,'_blank');
 }
 
-// ===== CUSTOM MSGS =====
 function openCustomMsgs() { closeM('menu-modal'); currentMsgDayFilter=null; renderCustomMsgList(); openM('custom-msgs-modal'); }
 
 function filterMsgsByDay(day) {
@@ -1502,13 +2017,17 @@ function renderCustomMsgList() {
 }
 
 function sendCustomMsg(phone) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) {
+    showToast('ليس لديك صلاحية', 'error', 'fa-lock');
+    return;
+  }
   const t = document.getElementById('custom-title').value||'تنبيه', d = document.getElementById('custom-details').value;
   if(!d) { showToast('برجاء كتابة الرسالة','error','fa-exclamation-circle'); return; }
   window.open(`https://wa.me/2${phone}?text=*${t}*%0A${d}`,'_blank');
 }
 
-// ===== EXPORT PDF =====
 function exportPDF() {
+  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه تصدير التقارير', 'error', 'fa-lock'); return; }
   let totalRem=0, totalCollected=0, totalOD=0, activeCount=0;
   customers.forEach(c => {
     const paid=c.payments.reduce((s,p)=>s+p.amount,0), ed=c.earlyDiscount||0;
@@ -1542,14 +2061,12 @@ function exportPDF() {
   win.document.close();
 }
 
-// ===== SAVE / BACKUP =====
 function save() {
   localStorage.setItem('inst_manager_v2_data', JSON.stringify(customers));
   updateBackupField();
 }
 
 function saveTrash() {
-  // حذف العناصر اللي عدت عليها 30 يوم
   const limit = 30 * 24 * 60 * 60 * 1000;
   trashItems = trashItems.filter(x => (Date.now() - x.deletedAt) < limit);
   localStorage.setItem('opera_trash_v1', JSON.stringify(trashItems));
@@ -1568,6 +2085,7 @@ function updateBackupField() {
 }
 
 function openTrash() {
+  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه الوصول لسلة المهملات', 'error', 'fa-lock'); return; }
   closeM('menu-modal');
   saveTrash();
   activeTrashTab = 'custs';
@@ -1624,6 +2142,7 @@ function renderTrash(tab) {
 }
 
 function restoreItem(idx) {
+  if(!currentUser.isAdmin) return;
   const item = trashItems[idx];
   if(!item) return;
   if(item.type === 'customer') {
@@ -1652,6 +2171,7 @@ function restoreItem(idx) {
 }
 
 function permanentDelete(idx) {
+  if(!currentUser.isAdmin) return;
   if(confirm('حذف نهائي؟ لا يمكن التراجع')) {
     trashItems.splice(idx, 1);
     saveTrash();
@@ -1660,7 +2180,39 @@ function permanentDelete(idx) {
   }
 }
 
+function openCredentialsModal() {
+  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه تغيير بيانات الدخول', 'error', 'fa-lock'); return; }
+  closeM('menu-modal');
+  document.getElementById('new-username').value = USER_CREDENTIALS.username;
+  document.getElementById('new-password').value = '';
+  openM('user-credentials-modal');
+}
+
+function changeCredentials() {
+  if(!currentUser.isAdmin) return;
+  const newUser = document.getElementById('new-username').value.trim();
+  const newPass = document.getElementById('new-password').value;
+  
+  if(!newUser || !newPass) {
+    showToast('يرجى ملء جميع الحقول', 'error', 'fa-exclamation-circle');
+    return;
+  }
+  
+  USER_CREDENTIALS = { username: newUser, password: newPass };
+  localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+  closeM('user-credentials-modal');
+  showToast('تم تحديث بيانات الدخول بنجاح', 'success', 'fa-check-circle');
+}
+
 function openM(id) {
+  if(id === 'report-modal' && !currentUser.isAdmin) {
+    showToast('المدير فقط يمكنه عرض التقرير المالي', 'error', 'fa-lock');
+    return;
+  }
+  if(id === 'backup-modal' && !currentUser.isAdmin) {
+    showToast('المدير فقط يمكنه الوصول للنسخ الاحتياطي', 'error', 'fa-lock');
+    return;
+  }
   const el = document.getElementById(id); el.classList.add('open'); el.style.display='flex';
   if(id === 'backup-modal') updateBackupField();
 }
@@ -1669,11 +2221,13 @@ function closeM(id) { document.getElementById(id).style.display='none'; document
 function closeToMenu(id) { closeM(id); openM('menu-modal'); }
 
 function copyToClipboard() {
+  if(!currentUser.isAdmin) return;
   const el = document.getElementById('backup-data'); el.select(); document.execCommand('copy');
   showToast('تم نسخ جميع البيانات!');
 }
 
 function importData() {
+  if(!currentUser.isAdmin) { showToast('غير مصرح', 'error', 'fa-lock'); return; }
   const code = document.getElementById('backup-data').value;
   if(!code) { showToast('الرجاء لصق الكود','error','fa-exclamation-circle'); return; }
   if(confirm('استبدال كافة البيانات الحالية؟')) {
@@ -1689,9 +2243,7 @@ function importData() {
   }
 }
 
-// ===== INIT =====
-(function init() {
-  // Android WebView font scale fix
+function initApp() {
   if (window.devicePixelRatio && window.devicePixelRatio > 2) {
     document.documentElement.style.fontSize = '14px';
   } else if (window.devicePixelRatio && window.devicePixelRatio > 1.5) {
@@ -1708,14 +2260,76 @@ function importData() {
   } else {
     document.body.style.backgroundColor = '#000000';
   }
-  saveTrash(); // تنظيف العناصر المنتهية عند الفتح
+  saveTrash();
   updateTrashBadge();
   setHeaderDate();
   const sortChips = document.querySelectorAll('.sort-chip');
   const sorts = ['recent','due-high','name','monthly','remaining'];
   sortChips.forEach((c,i) => { if(sorts[i]) c.id = 'sort-' + sorts[i]; });
   render();
-})();
+}
+
+// Start with login screen visible
+document.getElementById('login-screen').style.display = 'flex';
+document.getElementById('app-main').style.display = 'none';
+document.getElementById('login-username').focus();
+
+// Global functions for HTML onclick
+window.toggleTheme = toggleTheme;
+window.exportPDF = exportPDF;
+window.openM = openM;
+window.closeM = closeM;
+window.closeToMenu = closeToMenu;
+window.showOverdueList = showOverdueList;
+window.openLogs = openLogs;
+window.onSearch = onSearch;
+window.clearSearch = clearSearch;
+window.filterByDay = filterByDay;
+window.setSort = setSort;
+window.openSavingsModal = openSavingsModal;
+window.openCollections = openCollections;
+window.openProductsModal = openProductsModal;
+window.openArchive = openArchive;
+window.openOffers = openOffers;
+window.openCustomMsgs = openCustomMsgs;
+window.openTrash = openTrash;
+window.addSavingsAccount = addSavingsAccount;
+window.processSavingsOp = processSavingsOp;
+window.deleteSavingsAccount = deleteSavingsAccount;
+window.autoCalc = autoCalc;
+window.saveCustomer = saveCustomer;
+window.openEditModal = openEditModal;
+window.updateCustomerInfo = updateCustomerInfo;
+window.openPaymentModal = openPaymentModal;
+window.processEarlySettlement = processEarlySettlement;
+window.processPayment = processPayment;
+window.deletePayment = deletePayment;
+window.deleteCust = deleteCust;
+window.archiveCustomer = archiveCustomer;
+window.filterCollections = filterCollections;
+window.renderLogs = renderLogs;
+window.remindDirectly = remindDirectly;
+window.alertUpcomingDue = alertUpcomingDue;
+window.sendOffer = sendOffer;
+window.filterMsgsByDay = filterMsgsByDay;
+window.sendCustomMsg = sendCustomMsg;
+window.renderTrash = renderTrash;
+window.restoreItem = restoreItem;
+window.permanentDelete = permanentDelete;
+window.copyToClipboard = copyToClipboard;
+window.importData = importData;
+window.attemptLogin = attemptLogin;
+window.switchLoginTab = switchLoginTab;
+window.openCredentialsModal = openCredentialsModal;
+window.changeCredentials = changeCredentials;
+window.openStaffModal = openStaffModal;
+window.openAddStaffModal = openAddStaffModal;
+window.saveStaffMember = saveStaffMember;
+window.editStaff = editStaff;
+window.deleteStaff = deleteStaff;
+window.logout = logout;
+window.sendWA = sendWA;
+window.sendSavWA = sendSavWA;
 </script>
 </body>
 </html>
