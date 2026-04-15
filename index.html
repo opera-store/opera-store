@@ -671,6 +671,22 @@ input, textarea, select { font-size: 0.88rem !important; }
     </button>
     <button class="menu-btn" id="menu-staff-btn" onclick="openStaffModal()"><i class="fa-solid fa-users-gear" style="color:var(--blue)"></i> إدارة الموظفين</button>
     <button class="menu-btn" id="menu-creds-btn" onclick="openCredentialsModal()"><i class="fa-solid fa-user-lock" style="color:var(--accent2)"></i> المستخدم</button>
+    <!-- زر الإعدادات للموظف فقط -->
+    <button class="menu-btn" id="menu-staff-settings-btn" onclick="openStaffSettingsModal()" style="display:none;"><i class="fa-solid fa-gear" style="color:var(--accent2)"></i> الإعدادات</button>
+  </div>
+</div>
+
+<!-- ===== STAFF SETTINGS MODAL (للموظف فقط) ===== -->
+<div class="modal-overlay" id="staff-settings-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeM('staff-settings-modal')">رجوع</div>
+    <div class="modal-title">إعدادات الموظف</div>
+    <div class="field">
+      <label>🔒 كلمة المرور الجديدة</label>
+      <input type="password" id="staff-new-password" placeholder="****">
+    </div>
+    <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.7">يمكنك تغيير كلمة المرور الخاصة بك فقط. اسم المستخدم لا يمكن تغييره.</p>
+    <button class="btn btn-green" onclick="changeStaffPassword()"><i class="fa-solid fa-check"></i> حفظ كلمة المرور</button>
   </div>
 </div>
 
@@ -736,6 +752,10 @@ input, textarea, select { font-size: 0.88rem !important; }
       <div class="permission-item">
         <label>🗑️ حذف أو أرشفة عملاء</label>
         <input type="checkbox" id="perm-delete">
+      </div>
+      <div class="permission-item">
+        <label>📊 عرض التقرير المالي</label>
+        <input type="checkbox" id="perm-report">
       </div>
     </div>
     <p style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:12px">
@@ -1146,12 +1166,13 @@ function applyPermissions() {
   
   // إخفاء/إظهار الأزرار حسب الصلاحيات
   document.getElementById('data-btn').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('report-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('report-btn').style.display = (isAdmin || perms.canViewReport) ? 'flex' : 'none';
   document.getElementById('menu-logs-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-pdf-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-trash-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-staff-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-creds-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-staff-settings-btn').style.display = !isAdmin ? 'flex' : 'none';
   
   // إحصائيات حساسة
   if(!isAdmin) {
@@ -1186,6 +1207,7 @@ function applyPermissions() {
 function hasPermission(action) {
   if(currentUser.isAdmin) return true;
   if(!currentUser.permissions) return false;
+  if(action === 'viewReport') return currentUser.permissions.canViewReport || false;
   return currentUser.permissions[action] || false;
 }
 
@@ -1230,6 +1252,7 @@ function openAddStaffModal() {
   document.getElementById('perm-edit').checked = false;
   document.getElementById('perm-add').checked = false;
   document.getElementById('perm-delete').checked = false;
+  document.getElementById('perm-report').checked = false;
   openM('add-staff-modal');
 }
 
@@ -1246,6 +1269,7 @@ function editStaff(id) {
   document.getElementById('perm-edit').checked = s.permissions.canEdit || false;
   document.getElementById('perm-add').checked = s.permissions.canAdd || false;
   document.getElementById('perm-delete').checked = s.permissions.canDelete || false;
+  document.getElementById('perm-report').checked = s.permissions.canViewReport || false;
   openM('add-staff-modal');
 }
 
@@ -1272,7 +1296,8 @@ function saveStaffMember() {
     canWA: document.getElementById('perm-wa').checked,
     canEdit: document.getElementById('perm-edit').checked,
     canAdd: document.getElementById('perm-add').checked,
-    canDelete: document.getElementById('perm-delete').checked
+    canDelete: document.getElementById('perm-delete').checked,
+    canViewReport: document.getElementById('perm-report').checked
   };
   
   if(id) {
@@ -1304,6 +1329,30 @@ function deleteStaff(id) {
     localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
     renderStaffList();
     showToast('تم حذف الموظف');
+  }
+}
+
+function openStaffSettingsModal() {
+  if(currentUser.isAdmin) return;
+  closeM('menu-modal');
+  document.getElementById('staff-new-password').value = '';
+  openM('staff-settings-modal');
+}
+
+function changeStaffPassword() {
+  if(currentUser.isAdmin) return;
+  const newPass = document.getElementById('staff-new-password').value;
+  if(!newPass) {
+    showToast('يرجى إدخال كلمة مرور جديدة', 'error', 'fa-exclamation-circle');
+    return;
+  }
+  const staff = staffMembers.find(s => s.id === currentUser.staffId);
+  if(staff) {
+    staff.password = newPass;
+    staff.passwordChanged = true;
+    localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+    closeM('staff-settings-modal');
+    showToast('تم تغيير كلمة المرور بنجاح', 'success', 'fa-check-circle');
   }
 }
 
@@ -1606,9 +1655,9 @@ function render() {
 
   if(!shown) list.innerHTML = '<div class="empty"><i class="fa-solid fa-inbox"></i><p>لا يوجد عملاء حالياً</p></div>';
 
-  document.getElementById('top-remaining').innerText = currentUser.isAdmin ? fmt(totalRem) : '---';
+  document.getElementById('top-remaining').innerText = (currentUser.isAdmin || hasPermission('canViewReport')) ? fmt(totalRem) : '---';
   document.getElementById('top-overdue').innerText = fmt(totalOD);
-  document.getElementById('top-collected').innerText = currentUser.isAdmin ? fmt(colNet) : '---';
+  document.getElementById('top-collected').innerText = (currentUser.isAdmin || hasPermission('canViewReport')) ? fmt(colNet) : '---';
 
   const totalContract = mktNet;
   if(totalContract > 0) {
@@ -1627,7 +1676,7 @@ function render() {
   const ob = document.getElementById('overdue-badge');
   if(ob) ob.textContent = overdueCount > 0 ? overdueCount : '';
 
-  if(currentUser.isAdmin) {
+  if(currentUser.isAdmin || hasPermission('canViewReport')) {
     document.getElementById('report-active-filter').innerText = currentDayFilter ? `نتائج عملاء يوم: ${currentDayFilter}` : 'النتائج الإجمالية لكافة العملاء';
     let totalSP=0, totalIP=0;
     customers.forEach(c => {
@@ -2027,7 +2076,7 @@ function sendCustomMsg(phone) {
 }
 
 function exportPDF() {
-  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه تصدير التقارير', 'error', 'fa-lock'); return; }
+  if(!currentUser.isAdmin && !hasPermission('canViewReport')) { showToast('غير مصرح', 'error', 'fa-lock'); return; }
   let totalRem=0, totalCollected=0, totalOD=0, activeCount=0;
   customers.forEach(c => {
     const paid=c.payments.reduce((s,p)=>s+p.amount,0), ed=c.earlyDiscount||0;
@@ -2205,8 +2254,8 @@ function changeCredentials() {
 }
 
 function openM(id) {
-  if(id === 'report-modal' && !currentUser.isAdmin) {
-    showToast('المدير فقط يمكنه عرض التقرير المالي', 'error', 'fa-lock');
+  if(id === 'report-modal' && !currentUser.isAdmin && !hasPermission('canViewReport')) {
+    showToast('غير مصرح لك بعرض التقرير المالي', 'error', 'fa-lock');
     return;
   }
   if(id === 'backup-modal' && !currentUser.isAdmin) {
@@ -2330,6 +2379,8 @@ window.deleteStaff = deleteStaff;
 window.logout = logout;
 window.sendWA = sendWA;
 window.sendSavWA = sendSavWA;
+window.openStaffSettingsModal = openStaffSettingsModal;
+window.changeStaffPassword = changeStaffPassword;
 </script>
 </body>
 </html>
