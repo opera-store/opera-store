@@ -139,6 +139,24 @@ body::before {
   margin-bottom: 6px;
   color: var(--text);
 }
+.login-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.login-checkbox input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.login-checkbox label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+}
 .login-btn {
   background: var(--accent);
   color: white;
@@ -562,12 +580,16 @@ input, textarea, select { font-size: 0.88rem !important; }
       <button class="login-tab" id="tab-staff" onclick="switchLoginTab('staff')">موظف</button>
     </div>
     <div class="login-input">
-      <label>👤 اسم المستخدم</label>
+      <label>اسم المستخدم</label>
       <input type="text" id="login-username" placeholder="أدخل اسم المستخدم" value="">
     </div>
     <div class="login-input">
-      <label>🔒 كلمة المرور</label>
+      <label>كلمة المرور</label>
       <input type="password" id="login-password" placeholder="********" value="">
+    </div>
+    <div class="login-checkbox">
+      <input type="checkbox" id="remember-me">
+      <label for="remember-me">تذكر اسم المستخدم</label>
     </div>
     <button class="login-btn" onclick="attemptLogin()">دخول</button>
     <div class="error-msg" id="login-error"></div>
@@ -682,7 +704,7 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div class="back-btn" onclick="closeM('staff-settings-modal')">رجوع</div>
     <div class="modal-title">إعدادات الموظف</div>
     <div class="field">
-      <label>🔒 كلمة المرور الجديدة</label>
+      <label>كلمة المرور الجديدة</label>
       <input type="password" id="staff-new-password" placeholder="****">
     </div>
     <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.7">يمكنك تغيير كلمة المرور الخاصة بك فقط. اسم المستخدم لا يمكن تغييره.</p>
@@ -696,11 +718,11 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div class="back-btn" onclick="closeM('user-credentials-modal')">رجوع</div>
     <div class="modal-title">تغيير بيانات الدخول (مدير)</div>
     <div class="field">
-      <label>👤 اسم المستخدم الجديد</label>
+      <label>اسم المستخدم الجديد</label>
       <input type="text" id="new-username" placeholder="admin">
     </div>
     <div class="field">
-      <label>🔒 كلمة المرور الجديدة</label>
+      <label>كلمة المرور الجديدة</label>
       <input type="password" id="new-password" placeholder="****">
     </div>
     <button class="btn btn-green" onclick="changeCredentials()"><i class="fa-solid fa-check"></i> حفظ التغييرات</button>
@@ -730,31 +752,31 @@ input, textarea, select { font-size: 0.88rem !important; }
     </div>
     <div class="permission-group">
       <div class="permission-item">
-        <label>👁️ عرض العملاء والمتأخرين</label>
+        <label>عرض العملاء والمتأخرين</label>
         <input type="checkbox" id="perm-view" checked>
       </div>
       <div class="permission-item">
-        <label>💰 تسجيل دفعات وسداد مبكر</label>
+        <label>تسجيل دفعات وسداد مبكر</label>
         <input type="checkbox" id="perm-pay" checked>
       </div>
       <div class="permission-item">
-        <label>📱 إرسال رسائل واتساب</label>
+        <label>إرسال رسائل واتساب</label>
         <input type="checkbox" id="perm-wa" checked>
       </div>
       <div class="permission-item">
-        <label>✏️ تعديل بيانات العملاء</label>
+        <label>تعديل بيانات العملاء</label>
         <input type="checkbox" id="perm-edit">
       </div>
       <div class="permission-item">
-        <label>➕ إضافة عملاء جدد</label>
+        <label>إضافة عملاء جدد</label>
         <input type="checkbox" id="perm-add">
       </div>
       <div class="permission-item">
-        <label>🗑️ حذف أو أرشفة عملاء</label>
+        <label>حذف أو أرشفة عملاء</label>
         <input type="checkbox" id="perm-delete">
       </div>
       <div class="permission-item">
-        <label>📊 عرض التقرير المالي</label>
+        <label>عرض التقرير المالي</label>
         <input type="checkbox" id="perm-report">
       </div>
     </div>
@@ -1043,11 +1065,34 @@ input, textarea, select { font-size: 0.88rem !important; }
 <div class="modal-overlay" id="backup-modal">
   <div class="modal-panel">
     <div class="back-btn" onclick="closeM('backup-modal')">رجوع</div>
-    <div class="modal-title">Backup — DATA</div>
-    <textarea id="backup-data" rows="10" style="font-family:monospace;font-size:0.68rem;margin-bottom:14px;resize:none"></textarea>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <button class="btn" style="background:var(--surface3);color:var(--text)" onclick="copyToClipboard()"><i class="fa-solid fa-copy"></i> نسخ</button>
-      <button class="btn" style="background:var(--red);color:#fff" onclick="importData()"><i class="fa-solid fa-upload"></i> استعادة</button>
+    <div class="modal-title">النسخ الاحتياطي</div>
+    <p style="font-size:0.7rem;color:var(--muted);text-align:center;margin-bottom:16px">تصدير واستيراد ملف JSON (يشمل بيانات الدخول)</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <button class="btn" style="background:var(--green);color:#0a2018" onclick="exportDataToFile()"><i class="fa-solid fa-download"></i> تصدير ملف</button>
+      <button class="btn" style="background:var(--blue);color:#0a1a2e" onclick="document.getElementById('import-file-input').click()"><i class="fa-solid fa-upload"></i> استيراد ملف</button>
+    </div>
+    <input type="file" id="import-file-input" accept=".json,application/json" style="display:none" onchange="importDataFromFile(event)">
+    <div id="backup-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:0.7rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span>عدد العملاء:</span>
+        <span id="backup-cust-count" style="color:var(--green);font-weight:700">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span>حسابات التحويش:</span>
+        <span id="backup-sav-count" style="color:var(--pink);font-weight:700">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span>الموظفين:</span>
+        <span id="backup-staff-count" style="color:var(--blue);font-weight:700">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span>سلة المهملات:</span>
+        <span id="backup-trash-count" style="color:var(--red);font-weight:700">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+        <span>تاريخ النسخة:</span>
+        <span id="backup-date" style="color:var(--muted)">---</span>
+      </div>
     </div>
   </div>
 </div>
@@ -1074,12 +1119,39 @@ input, textarea, select { font-size: 0.88rem !important; }
 let USER_CREDENTIALS = { username: 'admin', password: '4321' };
 const AUTH_KEY = 'opera_user_creds';
 const STAFF_KEY = 'opera_staff_v1';
+const REMEMBER_ME_KEY = 'opera_remember_me';
 
 // Default staff permissions
 let staffMembers = JSON.parse(localStorage.getItem(STAFF_KEY)) || [];
 
 // Current session
 let currentUser = { username: 'admin', isAdmin: true, permissions: null };
+
+// Load remembered username
+function loadRememberedUsername() {
+  const remembered = localStorage.getItem(REMEMBER_ME_KEY);
+  if (remembered) {
+    try {
+      const data = JSON.parse(remembered);
+      document.getElementById('login-username').value = data.username || '';
+      document.getElementById('remember-me').checked = true;
+      if (data.lastTab) {
+        switchLoginTab(data.lastTab);
+      }
+    } catch(e) {}
+  }
+}
+
+function saveRememberedUsername(username, isAdminTab) {
+  if (document.getElementById('remember-me').checked) {
+    localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
+      username: username,
+      lastTab: isAdminTab ? 'admin' : 'staff'
+    }));
+  } else {
+    localStorage.removeItem(REMEMBER_ME_KEY);
+  }
+}
 
 function loadCredentials() {
   const saved = localStorage.getItem(AUTH_KEY);
@@ -1091,6 +1163,7 @@ function loadCredentials() {
   }
 }
 loadCredentials();
+loadRememberedUsername();
 
 function switchLoginTab(type) {
   document.getElementById('tab-admin').classList.toggle('active', type === 'admin');
@@ -1114,6 +1187,7 @@ function attemptLogin() {
   if(isAdminTab) {
     if(u === USER_CREDENTIALS.username && p === USER_CREDENTIALS.password) {
       currentUser = { username: u, isAdmin: true, permissions: null };
+      saveRememberedUsername(u, true);
       loginSuccess();
     } else {
       err.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة';
@@ -1126,6 +1200,7 @@ function attemptLogin() {
           // First login, allow
         }
         currentUser = { username: u, isAdmin: false, permissions: staff.permissions, staffId: staff.id, staffName: staff.name };
+        saveRememberedUsername(u, false);
         loginSuccess();
       } else {
         err.textContent = '❌ كلمة المرور غير صحيحة';
@@ -1559,7 +1634,7 @@ function deleteSavingsAccount(id) {
 
 function saveSavings() {
   localStorage.setItem('savings_v2_data', JSON.stringify(savingsAccounts));
-  updateBackupField();
+  updateBackupPreview();
 }
 
 function autoCalc() {
@@ -2112,7 +2187,7 @@ function exportPDF() {
 
 function save() {
   localStorage.setItem('inst_manager_v2_data', JSON.stringify(customers));
-  updateBackupField();
+  updateBackupPreview();
 }
 
 function saveTrash() {
@@ -2120,6 +2195,7 @@ function saveTrash() {
   trashItems = trashItems.filter(x => (Date.now() - x.deletedAt) < limit);
   localStorage.setItem('opera_trash_v1', JSON.stringify(trashItems));
   updateTrashBadge();
+  updateBackupPreview();
 }
 
 function updateTrashBadge() {
@@ -2127,10 +2203,113 @@ function updateTrashBadge() {
   if(b) b.textContent = trashItems.length > 0 ? trashItems.length : '';
 }
 
-function updateBackupField() {
-  const allData = { customers, savings: savingsAccounts };
-  const el = document.getElementById('backup-data');
-  if(el) el.value = JSON.stringify(allData);
+function updateBackupPreview() {
+  const custCount = document.getElementById('backup-cust-count');
+  const savCount = document.getElementById('backup-sav-count');
+  const staffCount = document.getElementById('backup-staff-count');
+  const trashCount = document.getElementById('backup-trash-count');
+  const backupDate = document.getElementById('backup-date');
+  
+  if(custCount) custCount.textContent = customers.length;
+  if(savCount) savCount.textContent = savingsAccounts.length;
+  if(staffCount) staffCount.textContent = staffMembers.length;
+  if(trashCount) trashCount.textContent = trashItems.length;
+  if(backupDate) backupDate.textContent = new Date().toLocaleDateString('ar-EG') + ' ' + new Date().toLocaleTimeString('ar-EG');
+}
+
+// ===== NEW: EXPORT/IMPORT JSON FILE =====
+function exportDataToFile() {
+  if(!currentUser.isAdmin) {
+    showToast('المدير فقط يمكنه تصدير البيانات', 'error', 'fa-lock');
+    return;
+  }
+  
+  const fullBackup = {
+    version: '2.0',
+    exportDate: new Date().toISOString(),
+    data: {
+      customers: customers,
+      savings: savingsAccounts,
+      staff: staffMembers,
+      trash: trashItems,
+      credentials: USER_CREDENTIALS
+    }
+  };
+  
+  const jsonStr = JSON.stringify(fullBackup, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `opera_backup_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('تم تصدير الملف بنجاح', 'success', 'fa-download');
+}
+
+function importDataFromFile(event) {
+  if(!currentUser.isAdmin) {
+    showToast('المدير فقط يمكنه استيراد البيانات', 'error', 'fa-lock');
+    event.target.value = '';
+    return;
+  }
+  
+  const file = event.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      
+      if(confirm('سيتم استبدال جميع البيانات الحالية بالملف المستورد. هل أنت متأكد؟')) {
+        // Handle both old format (array) and new format (object with version)
+        if(imported.version && imported.data) {
+          // New format
+          customers = imported.data.customers || [];
+          savingsAccounts = imported.data.savings || [];
+          staffMembers = imported.data.staff || [];
+          trashItems = imported.data.trash || [];
+          if(imported.data.credentials) {
+            USER_CREDENTIALS = imported.data.credentials;
+            localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+          }
+        } else if(imported.customers !== undefined) {
+          // Alternative format
+          customers = imported.customers || [];
+          savingsAccounts = imported.savings || [];
+          staffMembers = imported.staff || [];
+          trashItems = imported.trash || [];
+          if(imported.credentials) {
+            USER_CREDENTIALS = imported.credentials;
+            localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+          }
+        } else if(Array.isArray(imported)) {
+          // Old format: just customers array
+          customers = imported;
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('inst_manager_v2_data', JSON.stringify(customers));
+        localStorage.setItem('savings_v2_data', JSON.stringify(savingsAccounts));
+        localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+        localStorage.setItem('opera_trash_v1', JSON.stringify(trashItems));
+        
+        saveTrash();
+        render();
+        updateBackupPreview();
+        showToast('تم استيراد البيانات بنجاح', 'success', 'fa-check-circle');
+        closeM('backup-modal');
+      }
+    } catch(err) {
+      showToast('الملف غير صالح أو تالف', 'error', 'fa-exclamation-triangle');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function openTrash() {
@@ -2263,34 +2442,11 @@ function openM(id) {
     return;
   }
   const el = document.getElementById(id); el.classList.add('open'); el.style.display='flex';
-  if(id === 'backup-modal') updateBackupField();
+  if(id === 'backup-modal') updateBackupPreview();
 }
 
 function closeM(id) { document.getElementById(id).style.display='none'; document.getElementById(id).classList.remove('open'); }
 function closeToMenu(id) { closeM(id); openM('menu-modal'); }
-
-function copyToClipboard() {
-  if(!currentUser.isAdmin) return;
-  const el = document.getElementById('backup-data'); el.select(); document.execCommand('copy');
-  showToast('تم نسخ جميع البيانات!');
-}
-
-function importData() {
-  if(!currentUser.isAdmin) { showToast('غير مصرح', 'error', 'fa-lock'); return; }
-  const code = document.getElementById('backup-data').value;
-  if(!code) { showToast('الرجاء لصق الكود','error','fa-exclamation-circle'); return; }
-  if(confirm('استبدال كافة البيانات الحالية؟')) {
-    try {
-      const p = JSON.parse(code);
-      if(p.customers && p.savings) { customers=p.customers; savingsAccounts=p.savings; }
-      else if(Array.isArray(p)) { customers=p; }
-      localStorage.setItem('inst_manager_v2_data', JSON.stringify(customers));
-      localStorage.setItem('savings_v2_data', JSON.stringify(savingsAccounts));
-      render(); closeM('backup-modal');
-      showToast('تم استعادة البيانات بنجاح!');
-    } catch(e) { showToast('كود غير صالح!','error','fa-exclamation-circle'); }
-  }
-}
 
 function initApp() {
   if (window.devicePixelRatio && window.devicePixelRatio > 2) {
@@ -2365,8 +2521,8 @@ window.sendCustomMsg = sendCustomMsg;
 window.renderTrash = renderTrash;
 window.restoreItem = restoreItem;
 window.permanentDelete = permanentDelete;
-window.copyToClipboard = copyToClipboard;
-window.importData = importData;
+window.exportDataToFile = exportDataToFile;
+window.importDataFromFile = importDataFromFile;
 window.attemptLogin = attemptLogin;
 window.switchLoginTab = switchLoginTab;
 window.openCredentialsModal = openCredentialsModal;
@@ -2381,24 +2537,6 @@ window.sendWA = sendWA;
 window.sendSavWA = sendSavWA;
 window.openStaffSettingsModal = openStaffSettingsModal;
 window.changeStaffPassword = changeStaffPassword;
-  // Import the functions you need from the SDKs you need
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCUi3kogTKbON6HyKNXmIrgtyAVoI9h0t0",
-  authDomain: "opera-store-7e04d.firebaseapp.com",
-  projectId: "opera-store-7e04d",
-  storageBucket: "opera-store-7e04d.firebasestorage.app",
-  messagingSenderId: "515326654060",
-  appId: "1:515326654060:web:16d1eb1b533595483b0a49",
-  measurementId: "G-H77QC9Z1V3"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 </script>
 </body>
 </html>
