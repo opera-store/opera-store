@@ -568,6 +568,18 @@ input, textarea, select { font-size: 0.88rem !important; }
 </style>
 </head>
 <body>
+
+<!-- ===== شاشة تحميل Firebase ===== -->
+<div id="fb-loading" style="display:flex;position:fixed;inset:0;z-index:9999;background:#000000;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-size:2.5rem">🔥</div>
+  <div style="color:#7c6bff;font-family:'Cairo',sans-serif;font-size:1rem;font-weight:700;letter-spacing:0.05em">جاري تحميل البيانات...</div>
+  <div style="width:220px;height:4px;background:rgba(124,107,255,0.15);border-radius:10px;overflow:hidden">
+    <div style="height:100%;background:linear-gradient(90deg,#7c6bff,#a78bfa);border-radius:10px;animation:fbBar 1.4s ease-in-out infinite"></div>
+  </div>
+  <div id="fb-error-msg" style="display:none;color:#f87171;font-family:'Cairo',sans-serif;font-size:0.8rem;text-align:center;max-width:280px;line-height:1.6"></div>
+</div>
+<style>@keyframes fbBar{0%{transform:translateX(-100%);width:45%}50%{width:65%}100%{transform:translateX(340%);width:45%}}</style>
+
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ===== LOGIN SCREEN ===== -->
@@ -1114,6 +1126,80 @@ input, textarea, select { font-size: 0.88rem !important; }
 </div>
 </div>
 
+<!-- ===== Firebase SDK ===== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUi3kogTKbON6HyKNXmIrgtyAVoI9h0t0",
+  authDomain: "opera-store-7e04d.firebaseapp.com",
+  projectId: "opera-store-7e04d",
+  storageBucket: "opera-store-7e04d.firebasestorage.app",
+  messagingSenderId: "515326654060",
+  appId: "1:515326654060:web:16d1eb1b533595483b0a49"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// حفظ البيانات على Firebase + localStorage معاً
+window.fbSave = async function(key, data) {
+  try {
+    localStorage.setItem('fb_' + key, JSON.stringify(data)); // نسخة محلية فورية
+    await setDoc(doc(db, "opera_store", key), { value: JSON.stringify(data) });
+  } catch(e) {
+    console.warn("Firebase save error:", e);
+  }
+};
+
+// تحميل من Firebase، فإذا فشل يرجع للـ localStorage
+window.fbLoad = async function(key, localKey) {
+  try {
+    const snap = await getDoc(doc(db, "opera_store", key));
+    if(snap.exists()) {
+      const data = JSON.parse(snap.data().value);
+      localStorage.setItem(localKey || key, JSON.stringify(data)); // تحديث النسخة المحلية
+      return data;
+    }
+  } catch(e) {
+    console.warn("Firebase load error, using localStorage:", e);
+  }
+  const local = localStorage.getItem(localKey || key);
+  return local ? JSON.parse(local) : null;
+};
+
+// تحميل كل البيانات عند فتح الصفحة
+window.loadAllFromFirebase = async function() {
+  const errEl = document.getElementById('fb-error-msg');
+  try {
+    const [c, s, t, creds, staff] = await Promise.all([
+      window.fbLoad('customers', 'inst_manager_v2_data'),
+      window.fbLoad('savings', 'savings_v2_data'),
+      window.fbLoad('trash', 'opera_trash_v1'),
+      window.fbLoad('credentials', 'opera_user_creds'),
+      window.fbLoad('staff', 'opera_staff_v1'),
+    ]);
+    if(c) window._fbCustomers = c;
+    if(s) window._fbSavings = s;
+    if(t) window._fbTrash = t;
+    if(creds && creds.username) window._fbCredentials = creds;
+    if(staff) window._fbStaff = staff;
+  } catch(e) {
+    if(errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'تعذر الاتصال بـ Firebase — سيتم استخدام البيانات المحلية';
+    }
+  } finally {
+    window.firebaseReady = true;
+    const loadEl = document.getElementById('fb-loading');
+    if(loadEl) loadEl.style.display = 'none';
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => window.loadAllFromFirebase());
+</script>
+
 <script>
 // ===== AUTHENTICATION & PERMISSIONS =====
 let USER_CREDENTIALS = { username: 'admin', password: '4321' };
@@ -1154,6 +1240,9 @@ function saveRememberedUsername(username, isAdminTab) {
 }
 
 function loadCredentials() {
+  // أولاً: جرب Firebase (لو محمّل)
+  if(window._fbCredentials) { USER_CREDENTIALS = window._fbCredentials; return; }
+  // ثانياً: localStorage
   const saved = localStorage.getItem(AUTH_KEY);
   if(saved) {
     try {
@@ -1212,6 +1301,29 @@ function attemptLogin() {
 }
 
 function loginSuccess() {
+  // لو Firebase لسه بيحمّل، استنى وبعدين ادخل
+  if(!window.firebaseReady) {
+    const loadEl = document.getElementById('fb-loading');
+    if(loadEl) loadEl.style.display = 'flex';
+    const wait = setInterval(() => {
+      if(window.firebaseReady) {
+        clearInterval(wait);
+        if(loadEl) loadEl.style.display = 'none';
+        // تطبيق البيانات الجديدة من Firebase
+        if(window._fbCustomers) customers = window._fbCustomers;
+        if(window._fbSavings) savingsAccounts = window._fbSavings;
+        if(window._fbTrash) trashItems = window._fbTrash;
+        if(window._fbStaff) staffMembers = window._fbStaff;
+        if(window._fbCredentials) USER_CREDENTIALS = window._fbCredentials;
+        _doLoginSuccess();
+      }
+    }, 150);
+    return;
+  }
+  _doLoginSuccess();
+}
+
+function _doLoginSuccess() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-main').style.display = 'block';
   document.getElementById('login-error').textContent = '';
@@ -1393,6 +1505,7 @@ function saveStaffMember() {
   }
   
   localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+  if(window.fbSave) window.fbSave('staff', staffMembers);
   closeM('add-staff-modal');
   renderStaffList();
   showToast('تم حفظ بيانات الموظف بنجاح');
@@ -1402,6 +1515,7 @@ function deleteStaff(id) {
   if(confirm('حذف هذا الموظف نهائياً؟')) {
     staffMembers = staffMembers.filter(s => s.id !== id);
     localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+    if(window.fbSave) window.fbSave('staff', staffMembers);
     renderStaffList();
     showToast('تم حذف الموظف');
   }
@@ -1426,15 +1540,20 @@ function changeStaffPassword() {
     staff.password = newPass;
     staff.passwordChanged = true;
     localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
+    if(window.fbSave) window.fbSave('staff', staffMembers);
     closeM('staff-settings-modal');
     showToast('تم تغيير كلمة المرور بنجاح', 'success', 'fa-check-circle');
   }
 }
 
 // ===== APP LOGIC =====
-let customers = JSON.parse(localStorage.getItem('inst_manager_v2_data')) || [];
-let savingsAccounts = JSON.parse(localStorage.getItem('savings_v2_data')) || [];
-let trashItems = JSON.parse(localStorage.getItem('opera_trash_v1')) || [];
+// البيانات: Firebase أولاً، localStorage ثانياً كـ fallback
+let customers = (window._fbCustomers) || JSON.parse(localStorage.getItem('inst_manager_v2_data')) || [];
+let savingsAccounts = (window._fbSavings) || JSON.parse(localStorage.getItem('savings_v2_data')) || [];
+let trashItems = (window._fbTrash) || JSON.parse(localStorage.getItem('opera_trash_v1')) || [];
+// تطبيق بيانات الموظفين من Firebase لو موجودة
+if(window._fbStaff) staffMembers = window._fbStaff;
+if(window._fbCredentials) USER_CREDENTIALS = window._fbCredentials;
 let activeCustomerId = null, currentDayFilter = null, currentMsgDayFilter = null, activeSavingsId = null;
 let currentSort = 'recent';
 let activeTrashTab = 'custs';
@@ -1634,6 +1753,7 @@ function deleteSavingsAccount(id) {
 
 function saveSavings() {
   localStorage.setItem('savings_v2_data', JSON.stringify(savingsAccounts));
+  if(window.fbSave) window.fbSave('savings', savingsAccounts);
   updateBackupPreview();
 }
 
@@ -2187,6 +2307,7 @@ function exportPDF() {
 
 function save() {
   localStorage.setItem('inst_manager_v2_data', JSON.stringify(customers));
+  if(window.fbSave) window.fbSave('customers', customers);
   updateBackupPreview();
 }
 
@@ -2194,6 +2315,7 @@ function saveTrash() {
   const limit = 30 * 24 * 60 * 60 * 1000;
   trashItems = trashItems.filter(x => (Date.now() - x.deletedAt) < limit);
   localStorage.setItem('opera_trash_v1', JSON.stringify(trashItems));
+  if(window.fbSave) window.fbSave('trash', trashItems);
   updateTrashBadge();
   updateBackupPreview();
 }
@@ -2276,6 +2398,7 @@ function importDataFromFile(event) {
           if(imported.data.credentials) {
             USER_CREDENTIALS = imported.data.credentials;
             localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+            if(window.fbSave) window.fbSave('credentials', USER_CREDENTIALS);
           }
         } else if(imported.customers !== undefined) {
           // Alternative format
@@ -2286,6 +2409,7 @@ function importDataFromFile(event) {
           if(imported.credentials) {
             USER_CREDENTIALS = imported.credentials;
             localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+            if(window.fbSave) window.fbSave('credentials', USER_CREDENTIALS);
           }
         } else if(Array.isArray(imported)) {
           // Old format: just customers array
@@ -2297,6 +2421,13 @@ function importDataFromFile(event) {
         localStorage.setItem('savings_v2_data', JSON.stringify(savingsAccounts));
         localStorage.setItem(STAFF_KEY, JSON.stringify(staffMembers));
         localStorage.setItem('opera_trash_v1', JSON.stringify(trashItems));
+        // Save to Firebase
+        if(window.fbSave) {
+          window.fbSave('customers', customers);
+          window.fbSave('savings', savingsAccounts);
+          window.fbSave('staff', staffMembers);
+          window.fbSave('trash', trashItems);
+        }
         
         saveTrash();
         render();
@@ -2428,6 +2559,7 @@ function changeCredentials() {
   
   USER_CREDENTIALS = { username: newUser, password: newPass };
   localStorage.setItem(AUTH_KEY, JSON.stringify(USER_CREDENTIALS));
+  if(window.fbSave) window.fbSave('credentials', USER_CREDENTIALS);
   closeM('user-credentials-modal');
   showToast('تم تحديث بيانات الدخول بنجاح', 'success', 'fa-check-circle');
 }
