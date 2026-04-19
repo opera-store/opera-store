@@ -1848,9 +1848,9 @@ function attemptLogin() {
       return cp === phone || cp === phone.replace(/^0/, '2') || phone === cp.replace(/^2/, '0');
     });
     if(!cust) { err.textContent = '❌ رقم الهاتف غير مسجل'; logActivity('customer_fail', {phone: u, reason: 'رقم غير مسجل'}); return; }
-    if(!cust.portalPassword) { err.textContent = '❌ البوابة غير مفعّلة لهذا الحساب — تواصل مع المتجر'; return; }
-    // لو العميل غيّر كلمة المرور، 0000 ما تشتغلش
-    const validCustPass = cust.portalPasswordChanged ? (p === cust.portalPassword) : (p === '0000' || p === cust.portalPassword);
+    // كل العملاء مفعّلين تلقائياً — لو مفيش كلمة مرور اعتبرها 0000
+    const effectivePass = cust.portalPassword || '0000';
+    const validCustPass = cust.portalPasswordChanged ? (p === effectivePass) : (p === '0000' || p === effectivePass);
     if(!validCustPass) { err.textContent = '❌ كلمة المرور غير صحيحة'; logActivity('customer_fail', {phone: u, name: cust.name, reason: 'كلمة مرور خاطئة'}); return; }
     // دخول ناجح
     logActivity('customer_login', {name: cust.name, phone: cust.phone, custId: cust.id});
@@ -3217,6 +3217,10 @@ function initApp() {
   const sortChips = document.querySelectorAll('.sort-chip');
   const sorts = ['recent','due-high','name','monthly','remaining'];
   sortChips.forEach((c,i) => { if(sorts[i]) c.id = 'sort-' + sorts[i]; });
+
+  // ===== تفعيل بوابة كل العملاء الحاليين تلقائياً =====
+  activateAllPortals();
+
   render();
 
   // ميزات جديدة
@@ -3228,6 +3232,19 @@ function initApp() {
   if(window.fbLoad) window.fbLoad('edit_log', EDIT_LOG_KEY).then(data => {
     if(data) localStorage.setItem(EDIT_LOG_KEY, JSON.stringify(data));
   }).catch(()=>{});
+}
+
+// تفعيل بوابة كل العملاء اللي مش عندهم كلمة مرور
+function activateAllPortals() {
+  let changed = false;
+  customers.forEach(c => {
+    if(!c.portalPassword) {
+      c.portalPassword = '0000';
+      c.portalPasswordChanged = false;
+      changed = true;
+    }
+  });
+  if(changed) save(); // حفظ على Firebase
 }
 
 // شاشة الـ login هتظهر بعد ما Firebase يخلص (أو auto-login لو في جلسة محفوظة)
