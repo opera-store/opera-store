@@ -238,6 +238,11 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,107,25
       <div id="p-status-badge" class="status-badge"></div>
     </div>
 
+    <!-- تنبيه كلمة المرور الافتراضية -->
+    <div id="p-default-pass-warn" style="display:none;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:0.75rem;color:#fb923c;line-height:1.6;text-align:center">
+      ⚠️ كلمة مرورك الحالية هي <strong>0000</strong> — يُنصح بتغييرها
+    </div>
+
     <!-- رسالة من المتجر -->
     <div id="p-msg-box" class="msg-box" style="display:none">
       <div class="msg-title"><i class="fa-solid fa-bell"></i> رسالة من المتجر</div>
@@ -312,7 +317,35 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,107,25
     <button class="logout-btn" onclick="doLogout()">
       <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
     </button>
+    <button class="logout-btn" onclick="openChangePass()" style="margin-top:8px;border-color:#7c6bff;color:#a78bfa">
+      <i class="fa-solid fa-key"></i> تغيير كلمة المرور
+    </button>
 
+  </div>
+</div>
+
+<!-- مودال تغيير كلمة المرور -->
+<div id="change-pass-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.85);backdrop-filter:blur(14px);align-items:center;justify-content:center">
+  <div style="background:#0d0d14;border:1px solid rgba(130,120,210,0.25);border-radius:24px;padding:28px 22px;max-width:360px;width:90%;text-align:center">
+    <div style="font-size:1.5rem;margin-bottom:8px">🔑</div>
+    <div style="font-size:1rem;font-weight:800;margin-bottom:18px;color:#e8e8f0">تغيير كلمة المرور</div>
+    <div style="text-align:right;margin-bottom:12px">
+      <label style="font-size:0.75rem;color:#e8e8f0;display:block;margin-bottom:5px">كلمة المرور الحالية</label>
+      <input type="password" id="cp-old" placeholder="****" style="width:100%;background:#13131e;border:1px solid rgba(130,120,210,0.2);color:#e8e8f0;border-radius:12px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:0.9rem;outline:none">
+    </div>
+    <div style="text-align:right;margin-bottom:12px">
+      <label style="font-size:0.75rem;color:#e8e8f0;display:block;margin-bottom:5px">كلمة المرور الجديدة</label>
+      <input type="password" id="cp-new" placeholder="****" style="width:100%;background:#13131e;border:1px solid rgba(130,120,210,0.2);color:#e8e8f0;border-radius:12px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:0.9rem;outline:none">
+    </div>
+    <div style="text-align:right;margin-bottom:14px">
+      <label style="font-size:0.75rem;color:#e8e8f0;display:block;margin-bottom:5px">تأكيد كلمة المرور</label>
+      <input type="password" id="cp-confirm" placeholder="****" style="width:100%;background:#13131e;border:1px solid rgba(130,120,210,0.2);color:#e8e8f0;border-radius:12px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:0.9rem;outline:none">
+    </div>
+    <div id="cp-error" style="color:#f87171;font-size:0.75rem;margin-bottom:10px;min-height:18px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button onclick="closeChangePass()" style="background:transparent;border:1px solid rgba(130,120,210,0.2);color:#6b6b8a;border-radius:12px;padding:11px;font-family:'Cairo',sans-serif;font-size:0.85rem;cursor:pointer">إلغاء</button>
+      <button onclick="doChangePass()" style="background:#7c6bff;color:#fff;border:none;border-radius:12px;padding:11px;font-family:'Cairo',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer">حفظ</button>
+    </div>
   </div>
 </div>
 
@@ -439,7 +472,9 @@ window.doLogin = function() {
 
   if(!c) { errEl.textContent = '❌ رقم الهاتف غير مسجل'; logActivity('customer_fail', {phone: document.getElementById('inp-phone').value.trim(), reason: 'رقم غير مسجل'}); return; }
   if(!c.portalPassword) { errEl.textContent = '❌ البوابة غير مفعّلة — تواصل مع المتجر'; return; }
-  if(pass !== c.portalPassword) { errEl.textContent = '❌ كلمة المرور غير صحيحة'; logActivity('customer_fail', {phone: c.phone, name: c.name, custId: c.id, reason: 'كلمة مرور خاطئة'}); return; }
+  // لو العميل غيّر كلمة المرور، 0000 ما تشتغلش
+  const validPass = c.portalPasswordChanged ? (pass === c.portalPassword) : (pass === '0000' || pass === c.portalPassword);
+  if(!validPass) { errEl.textContent = '❌ كلمة المرور غير صحيحة'; logActivity('customer_fail', {phone: c.phone, name: c.name, custId: c.id, reason: 'كلمة مرور خاطئة'}); return; }
 
   // دخول ناجح — سجّل النشاط
   logActivity('customer_login', {name: c.name, phone: c.phone, custId: c.id});
@@ -527,14 +562,26 @@ function renderPortal(c) {
   const [sl, sbg, sc] = statusMap[status];
   const progColor = status==='bad'?'var(--red)':status==='warn'?'var(--orange)':status==='done'?'var(--muted)':'var(--green)';
 
-  // رسالة من المتجر
+  // رسالة من المتجر (شخصية أو جماعية broadcast)
   const msgBox = document.getElementById('p-msg-box');
-  if(c.portalMessage) {
+  const displayMsg = c.broadcastMsg || (c.portalMessage ? {title:'📩 رسالة', body: c.portalMessage} : null);
+  if(displayMsg) {
     msgBox.style.display = 'block';
-    document.getElementById('p-msg-body').textContent = c.portalMessage;
+    const typeIcon = displayMsg.type === 'offer' ? '🏷️' : displayMsg.type === 'warn' ? '⚠️' : '📢';
+    document.getElementById('p-msg-body').innerHTML =
+      `<strong>${typeIcon} ${displayMsg.title||''}</strong><br>` +
+      `<span style="font-size:0.82rem">${displayMsg.body||displayMsg}</span>` +
+      (displayMsg.sentAt ? `<br><span style="font-size:0.6rem;color:var(--muted)">${displayMsg.sentAt}</span>` : '');
   } else {
     msgBox.style.display = 'none';
   }
+
+  // تنبيه كلمة المرور الافتراضية
+  const warnEl = document.getElementById('p-default-pass-warn');
+  if(warnEl) warnEl.style.display = c.portalPasswordChanged ? 'none' : 'block';
+
+  // حفظ custId للاستخدام في تغيير كلمة المرور
+  window._custId = c.id;
 
   // شارة الحالة
   const badge = document.getElementById('p-status-badge');
@@ -588,6 +635,51 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 window.showToast = showToast;
+
+// ===== تغيير كلمة المرور =====
+window.openChangePass = function() {
+  document.getElementById('cp-old').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  document.getElementById('cp-error').textContent = '';
+  document.getElementById('change-pass-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('cp-old').focus(), 100);
+};
+
+window.closeChangePass = function() {
+  document.getElementById('change-pass-modal').style.display = 'none';
+};
+
+window.doChangePass = async function() {
+  const oldPass = document.getElementById('cp-old').value;
+  const newPass = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-error');
+
+  const all = window._allCustomers || [];
+  const c = all.find(x => x.id === window._custId);
+  if(!c) return;
+
+  const validOld = c.portalPasswordChanged ? (oldPass === c.portalPassword) : (oldPass === '0000' || oldPass === c.portalPassword);
+  if(!validOld) { errEl.textContent = '❌ كلمة المرور الحالية غير صحيحة'; return; }
+  if(newPass.length < 4) { errEl.textContent = '❌ كلمة المرور قصيرة جداً (4 أحرف على الأقل)'; return; }
+  if(newPass !== confirm) { errEl.textContent = '❌ كلمة المرور الجديدة غير متطابقة'; return; }
+  if(newPass === '0000') { errEl.textContent = '❌ لا يمكن استخدام 0000 ككلمة مرور'; return; }
+
+  // تحديث كلمة المرور
+  c.portalPassword = newPass;
+  c.portalPasswordChanged = true;
+
+  // حفظ على Firebase
+  try {
+    await setDoc(doc(db, "opera_store", "customers"), { value: JSON.stringify(all) });
+    window.closeChangePass();
+    showToast('✅ تم تغيير كلمة المرور بنجاح');
+    renderPortal(c);
+  } catch(e) {
+    errEl.textContent = '❌ حدث خطأ أثناء الحفظ، حاول مجدداً';
+  }
+};
 </script>
 </body>
 </html>
