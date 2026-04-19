@@ -978,7 +978,6 @@ input, textarea, select { font-size: 0.88rem !important; }
     <button class="menu-btn" onclick="openCollections()"><i class="fa-solid fa-money-bill-trend-up" style="color:var(--blue)"></i> التحصيلات</button>
     <button class="menu-btn" onclick="openProductsModal()"><i class="fa-solid fa-boxes-stacked" style="color:var(--green)"></i> المنتجات</button>
     <button class="menu-btn" onclick="openArchive()"><i class="fa-solid fa-box-archive" style="color:var(--accent2)"></i> الأرشيف</button>
-    <button class="menu-btn" onclick="openOffers()"><i class="fa-solid fa-bullhorn" style="color:var(--orange)"></i> العروض والترويج</button>
     <button class="menu-btn" onclick="openCustomMsgs()"><i class="fa-solid fa-comment-dots" style="color:var(--green)"></i> رسائل مخصصة</button>
     <button class="menu-btn" id="menu-broadcast-btn" onclick="openBroadcast()"><i class="fa-solid fa-tower-broadcast" style="color:var(--pink)"></i> إشعار لكل العملاء</button>
     <button class="menu-btn" id="menu-logs-btn" onclick="openLogs()"><i class="fa-solid fa-receipt" style="color:var(--blue)"></i> سجل العمليات</button>
@@ -1112,6 +1111,10 @@ input, textarea, select { font-size: 0.88rem !important; }
         <label>عرض التقرير المالي</label>
         <input type="checkbox" id="perm-report">
       </div>
+      <div class="permission-item">
+        <label>🐷 إدارة حسابات التحويش</label>
+        <input type="checkbox" id="perm-savings">
+      </div>
     </div>
     <p style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:12px">
       كلمة المرور الافتراضية: 1234 (يمكن تغييرها من قبل الموظف لاحقاً)
@@ -1125,6 +1128,11 @@ input, textarea, select { font-size: 0.88rem !important; }
   <div class="modal-panel">
     <div class="back-btn" onclick="closeToMenu('savings-modal')">رجوع</div>
     <div class="modal-title">حسابات تحويش</div>
+    <!-- مجموع الأرصدة -->
+    <div id="savings-total-bar" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px">
+      <span style="font-size:0.72rem;color:var(--muted)">إجمالي كل الأرصدة</span>
+      <span id="savings-grand-total" style="font-size:1.1rem;font-weight:900;color:var(--green)">0 ج.م</span>
+    </div>
     <button class="btn btn-green" style="margin-bottom:20px" onclick="openM('add-savings-modal')">
       <i class="fa-solid fa-user-plus"></i> فتح حساب جديد
     </button>
@@ -1579,6 +1587,69 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+
+// ===== إرسال Push Notification لعميل معين =====
+// يستخدم FCM HTTP API عبر Firebase Cloud Function أو REST API
+// ⚠️ SERVER KEY — من Firebase Console → Project Settings → Cloud Messaging → Server key
+const FCM_SERVER_KEY = 'YOUR_SERVER_KEY_HERE';
+
+window.sendPushToCustomer = async function(custId, title, body, data = {}) {
+  if(FCM_SERVER_KEY === 'YOUR_SERVER_KEY_HERE') return; // لم يتم الإعداد بعد
+  try {
+    // جلب الـ token الخاص بالعميل
+    const tokenSnap = await getDoc(doc(db, "fcm_tokens", custId.toString()));
+    if(!tokenSnap.exists()) return; // العميل لم يفعّل الإشعارات
+    const { token } = tokenSnap.data();
+
+    // إرسال عبر FCM REST API
+    await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'key=' + FCM_SERVER_KEY
+      },
+      body: JSON.stringify({
+        to: token,
+        notification: { title, body, icon: '/icon-192.png', dir: 'rtl' },
+        data: { url: '/customer.html', ...data }
+      })
+    });
+  } catch(e) {
+    console.warn('Push notification error:', e);
+  }
+};
+
+// إرسال Push لكل العملاء (broadcast)
+window.sendPushToAll = async function(title, body) {
+  if(FCM_SERVER_KEY === 'YOUR_SERVER_KEY_HERE') return;
+  try {
+    // جلب كل الـ tokens
+    const { getDocs, collection: col } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const tokensSnap = await getDocs(col(db, "fcm_tokens"));
+    const tokens = [];
+    tokensSnap.forEach(d => tokens.push(d.data().token));
+    if(!tokens.length) return;
+
+    // إرسال لكل الـ tokens (batch بـ 500)
+    for(let i = 0; i < tokens.length; i += 500) {
+      const batch = tokens.slice(i, i + 500);
+      await fetch('https://fcm.googleapis.com/fcm/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'key=' + FCM_SERVER_KEY
+        },
+        body: JSON.stringify({
+          registration_ids: batch,
+          notification: { title, body, icon: '/icon-192.png', dir: 'rtl' },
+          data: { url: '/customer.html' }
+        })
+      });
+    }
+  } catch(e) {
+    console.warn('Broadcast push error:', e);
+  }
+};
 
 // ===== حفظ على Firebase + localStorage =====
 window.fbSave = async function(key, data) {
@@ -2035,6 +2106,7 @@ function openAddStaffModal() {
   document.getElementById('perm-add').checked = false;
   document.getElementById('perm-delete').checked = false;
   document.getElementById('perm-report').checked = false;
+  document.getElementById('perm-savings').checked = false;
   openM('add-staff-modal');
 }
 
@@ -2052,6 +2124,7 @@ function editStaff(id) {
   document.getElementById('perm-add').checked = s.permissions.canAdd || false;
   document.getElementById('perm-delete').checked = s.permissions.canDelete || false;
   document.getElementById('perm-report').checked = s.permissions.canViewReport || false;
+  document.getElementById('perm-savings').checked = s.permissions.canSavings || false;
   openM('add-staff-modal');
 }
 
@@ -2079,7 +2152,8 @@ function saveStaffMember() {
     canEdit: document.getElementById('perm-edit').checked,
     canAdd: document.getElementById('perm-add').checked,
     canDelete: document.getElementById('perm-delete').checked,
-    canViewReport: document.getElementById('perm-report').checked
+    canViewReport: document.getElementById('perm-report').checked,
+    canSavings: document.getElementById('perm-savings').checked
   };
   
   if(id) {
@@ -2221,6 +2295,9 @@ function clearSearch() {
 }
 
 function openSavingsModal() {
+  if(!currentUser.isAdmin && !hasPermission('canSavings')) {
+    showToast('ليس لديك صلاحية لإدارة التحويش', 'error', 'fa-lock'); return;
+  }
   closeM('menu-modal');
   renderSavingsList();
   const b = document.getElementById('savings-badge');
@@ -2243,17 +2320,30 @@ function addSavingsAccount() {
   renderSavingsList();
   ['sav-name','sav-phone','sav-prod','sav-date'].forEach(id => document.getElementById(id).value = '');
   closeM('add-savings-modal');
+  logEdit('إضافة تحويش', acc.name, 'حساب جديد');
   showToast('تم فتح حساب التحويش');
 }
 
 function renderSavingsList() {
   const el = document.getElementById('savings-list-content');
   el.innerHTML = '';
-  if(!savingsAccounts.length) { el.innerHTML = '<div class="empty"><i class="fa-solid fa-piggy-bank"></i><p>لا توجد حسابات تحويش</p></div>'; return; }
+  if(!savingsAccounts.length) {
+    el.innerHTML = '<div class="empty"><i class="fa-solid fa-piggy-bank"></i><p>لا توجد حسابات تحويش</p></div>';
+    const totalEl = document.getElementById('savings-grand-total');
+    if(totalEl) totalEl.textContent = '0 ج.م';
+    return;
+  }
+  // حساب الإجمالي الكلي
+  let grandTotal = 0;
   savingsAccounts.forEach(acc => {
     const balance = acc.ops.reduce((s,o) => s + (o.type==='in' ? o.amount : -o.amount), 0);
+    grandTotal += balance;
     const card = document.createElement('div');
     card.className = 'sav-card';
+    // زر الحذف يظهر فقط لو الرصيد صفر
+    const delBtn = (currentUser.isAdmin && balance === 0)
+      ? `<button class="btn-sm btn-del" style="margin-right:8px" onclick="event.stopPropagation();deleteSavingsAccount(${acc.id})"><i class="fa-solid fa-trash"></i></button>`
+      : (balance === 0 ? `<span style="font-size:0.6rem;color:var(--muted);margin-right:4px">صفر</span>` : '');
     card.innerHTML = `
       <div class="sav-icon"><i class="fa-solid fa-piggy-bank"></i></div>
       <div class="sav-info">
@@ -2261,14 +2351,16 @@ function renderSavingsList() {
         <div class="sav-meta">${acc.prod || '--'} | ${acc.ops.length} عملية</div>
       </div>
       <div class="sav-balance">
-        <div class="val">${fmt(balance)}</div>
+        <div class="val" style="color:${balance===0?'var(--muted)':'var(--green)'}">${fmt(balance)}</div>
         <div class="lbl">ج.م</div>
       </div>
-      <button class="btn-sm btn-del" style="margin-right:8px" onclick="event.stopPropagation();deleteSavingsAccount(${acc.id})"><i class="fa-solid fa-trash"></i></button>
+      ${delBtn}
     `;
     card.onclick = () => openSavingsDetail(acc.id);
     el.appendChild(card);
   });
+  const totalEl = document.getElementById('savings-grand-total');
+  if(totalEl) totalEl.textContent = fmt(grandTotal) + ' ج.م';
 }
 
 function openSavingsDetail(id) {
@@ -2299,6 +2391,7 @@ function processSavingsOp() {
   const acc = savingsAccounts.find(x => x.id === activeSavingsId);
   acc.ops.push({ amount: amt, type, date: fmtDate(new Date()), note: document.getElementById('sav-op-note').value });
   saveSavings();
+  logEdit(type === 'in' ? 'إيداع تحويش' : 'سحب تحويش', acc.name, `${fmt(amt)} ج.م`);
   document.getElementById('sav-op-amount').value = '';
   document.getElementById('sav-op-note').value = '';
   openSavingsDetail(activeSavingsId);
@@ -2331,13 +2424,17 @@ function sendSavingsFullReport(accId) {
 }
 
 function deleteSavingsAccount(id) {
-  if(confirm('نقل هذا الحساب لسلة المهملات؟')) {
-    const acc = savingsAccounts.find(x => x.id === id);
-    if(!acc) return;
+  if(!currentUser.isAdmin) { showToast('المدير فقط يمكنه حذف الحسابات', 'error', 'fa-lock'); return; }
+  const acc = savingsAccounts.find(x => x.id === id);
+  if(!acc) return;
+  const balance = acc.ops.reduce((s,o) => s + (o.type==='in' ? o.amount : -o.amount), 0);
+  if(balance !== 0) { showToast('لا يمكن حذف حساب رصيده غير صفر', 'error', 'fa-lock'); return; }
+  if(confirm('حذف هذا الحساب نهائياً؟ رصيده صفر.')) {
     trashItems.push({ type:'savings', data: JSON.parse(JSON.stringify(acc)), deletedAt: Date.now() });
     savingsAccounts = savingsAccounts.filter(x => x.id !== id);
     saveTrash(); saveSavings(); renderSavingsList();
-    showToast('تم نقل الحساب لسلة المهملات');
+    logEdit('حذف تحويش', acc.name, 'رصيد صفر');
+    showToast('تم حذف الحساب');
   }
 }
 
@@ -2643,6 +2740,15 @@ function processPayment() {
   c.payments.push({amount:amt, date:fmtDate(document.getElementById('payment-date').value), fullDate:d.toISOString(), note:document.getElementById('payment-note').value});
   c.lastActionDate = Date.now(); save();
   logEdit('تسجيل قسط', c.name, `${fmt(amt)} ج.م`);
+  // إرسال Push Notification للعميل
+  if(window.sendPushToCustomer) {
+    const paid2 = c.payments.reduce((s,p) => s+p.amount, 0);
+    const rem2 = (c.total-c.down-(c.earlyDiscount||0)) - paid2;
+    window.sendPushToCustomer(c.id,
+      '✅ تم تسجيل قسطك',
+      `تم استلام ${fmt(amt)} ج.م — المتبقي: ${fmt(Math.max(0,rem2))} ج.م`
+    );
+  }
   document.getElementById('payment-amount').value = '';
   document.getElementById('payment-note').value = '';
   openPaymentModal(activeCustomerId); render();
@@ -3817,6 +3923,8 @@ function sendBroadcastToPortal() {
   document.getElementById('bc-status').textContent = `✅ تم نشر الإشعار لـ ${count} عميل`;
   showToast(`تم نشر الإشعار لـ ${count} عميل`, 'success', 'fa-bell');
   logEdit('إشعار جماعي', 'كل العملاء', title);
+  // إرسال Push Notification لكل العملاء
+  if(window.sendPushToAll) window.sendPushToAll(title, body);
 }
 
 function sendBroadcastWhatsApp() {
