@@ -1588,67 +1588,51 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// ===== إرسال Push Notification لعميل معين =====
-// يستخدم FCM HTTP API عبر Firebase Cloud Function أو REST API
-// ⚠️ SERVER KEY — من Firebase Console → Project Settings → Cloud Messaging → Server key
-const FCM_SERVER_KEY = 'YOUR_SERVER_KEY_HERE';
+// ===== OneSignal Push Notifications =====
+const ONESIGNAL_APP_ID = 'd64ddbfb-5d47-437d-9dd1-ea788c1fc62d';
+const ONESIGNAL_API_KEY = 'os_v2_app_2zg5x625i5bx3hor5j4iyh6gfxvms4ccfcxehxedlkqxqfyoeyygmlzgcgs4jmyqwvsuxul77pp3v5fgwlhwyj6imrvcwomgt3vhqci';
 
-window.sendPushToCustomer = async function(custId, title, body, data = {}) {
-  if(FCM_SERVER_KEY === 'YOUR_SERVER_KEY_HERE') return; // لم يتم الإعداد بعد
+// إرسال Push لعميل واحد عبر External User ID
+window.sendPushToCustomer = async function(custId, title, body) {
   try {
-    // جلب الـ token الخاص بالعميل
-    const tokenSnap = await getDoc(doc(db, "fcm_tokens", custId.toString()));
-    if(!tokenSnap.exists()) return; // العميل لم يفعّل الإشعارات
-    const { token } = tokenSnap.data();
-
-    // إرسال عبر FCM REST API
-    await fetch('https://fcm.googleapis.com/fcm/send', {
+    await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'key=' + FCM_SERVER_KEY
+        'Authorization': 'Key ' + ONESIGNAL_API_KEY
       },
       body: JSON.stringify({
-        to: token,
-        notification: { title, body, icon: '/icon-192.png', dir: 'rtl' },
-        data: { url: '/customer.html', ...data }
+        app_id: ONESIGNAL_APP_ID,
+        filters: [{ field: 'tag', key: 'custId', relation: '=', value: custId.toString() }],
+        headings: { ar: title, en: title },
+        contents: { ar: body, en: body },
+        url: window.location.origin + '/customer.html',
+        android_accent_color: '7c6bff',
+        small_icon: 'ic_stat_onesignal_default'
       })
     });
-  } catch(e) {
-    console.warn('Push notification error:', e);
-  }
+  } catch(e) { console.warn('OneSignal push error:', e); }
 };
 
-// إرسال Push لكل العملاء (broadcast)
+// إرسال Push لكل العملاء
 window.sendPushToAll = async function(title, body) {
-  if(FCM_SERVER_KEY === 'YOUR_SERVER_KEY_HERE') return;
   try {
-    // جلب كل الـ tokens
-    const { getDocs, collection: col } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    const tokensSnap = await getDocs(col(db, "fcm_tokens"));
-    const tokens = [];
-    tokensSnap.forEach(d => tokens.push(d.data().token));
-    if(!tokens.length) return;
-
-    // إرسال لكل الـ tokens (batch بـ 500)
-    for(let i = 0; i < tokens.length; i += 500) {
-      const batch = tokens.slice(i, i + 500);
-      await fetch('https://fcm.googleapis.com/fcm/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'key=' + FCM_SERVER_KEY
-        },
-        body: JSON.stringify({
-          registration_ids: batch,
-          notification: { title, body, icon: '/icon-192.png', dir: 'rtl' },
-          data: { url: '/customer.html' }
-        })
-      });
-    }
-  } catch(e) {
-    console.warn('Broadcast push error:', e);
-  }
+    await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Key ' + ONESIGNAL_API_KEY
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ['All'],
+        headings: { ar: title, en: title },
+        contents: { ar: body, en: body },
+        url: window.location.origin + '/customer.html',
+        android_accent_color: '7c6bff'
+      })
+    });
+  } catch(e) { console.warn('OneSignal broadcast error:', e); }
 };
 
 // ===== حفظ على Firebase + localStorage =====
