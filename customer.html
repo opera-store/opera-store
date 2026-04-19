@@ -429,7 +429,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         const all = await loadCustomers();
         window._allCustomers = all;
         const c = all.find(x => x.id === sess.custId);
-        if(c && c.portalPassword) {
+        if(c) {  // لا نشترط وجود portalPassword — كل العملاء مفعّلين تلقائياً
           loadEl.style.display = 'none';
           loginEl.style.display = 'none';
           renderPortal(c);
@@ -471,9 +471,10 @@ window.doLogin = function() {
   });
 
   if(!c) { errEl.textContent = '❌ رقم الهاتف غير مسجل'; logActivity('customer_fail', {phone: document.getElementById('inp-phone').value.trim(), reason: 'رقم غير مسجل'}); return; }
-  if(!c.portalPassword) { errEl.textContent = '❌ البوابة غير مفعّلة — تواصل مع المتجر'; return; }
-  // لو العميل غيّر كلمة المرور، 0000 ما تشتغلش
-  const validPass = c.portalPasswordChanged ? (pass === c.portalPassword) : (pass === '0000' || pass === c.portalPassword);
+
+  // لو مفيش كلمة مرور → اعتبرها 0000 تلقائياً
+  const effectivePass = c.portalPassword || '0000';
+  const validPass = c.portalPasswordChanged ? (pass === effectivePass) : (pass === '0000' || pass === effectivePass);
   if(!validPass) { errEl.textContent = '❌ كلمة المرور غير صحيحة'; logActivity('customer_fail', {phone: c.phone, name: c.name, custId: c.id, reason: 'كلمة مرور خاطئة'}); return; }
 
   // دخول ناجح — سجّل النشاط
@@ -660,7 +661,9 @@ window.doChangePass = async function() {
   const c = all.find(x => x.id === window._custId);
   if(!c) return;
 
-  const validOld = c.portalPasswordChanged ? (oldPass === c.portalPassword) : (oldPass === '0000' || oldPass === c.portalPassword);
+  const validOld = c.portalPasswordChanged
+    ? (oldPass === c.portalPassword)
+    : (oldPass === '0000' || oldPass === (c.portalPassword || '0000'));
   if(!validOld) { errEl.textContent = '❌ كلمة المرور الحالية غير صحيحة'; return; }
   if(newPass.length < 4) { errEl.textContent = '❌ كلمة المرور قصيرة جداً (4 أحرف على الأقل)'; return; }
   if(newPass !== confirm) { errEl.textContent = '❌ كلمة المرور الجديدة غير متطابقة'; return; }
