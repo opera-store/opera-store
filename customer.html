@@ -355,6 +355,7 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,107,25
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCUi3kogTKbON6HyKNXmIrgtyAVoI9h0t0",
@@ -367,6 +368,72 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+let messaging = null;
+
+// ===== VAPID KEY — اشتراك الإشعارات =====
+// ⚠️ ضع هنا الـ VAPID Key الخاص بك من Firebase Console
+// Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → Generate key pair
+const VAPID_KEY = 'BOFY7z5EAIcWo4Bp-wBtmM8xWACo1_yRqdg3D2bQQ_LuC3dWEyaj28RtxlzectM79AFlyB3miwtVLe8taIkq60c';
+
+// تهيئة FCM
+async function initMessaging() {
+  try {
+    if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    messaging = getMessaging(app);
+
+    // استقبال الإشعارات لما التطبيق مفتوح (foreground)
+    onMessage(messaging, (payload) => {
+      const { title, body } = payload.notification || {};
+      showInAppNotification(title || 'OPERA STORE', body || '');
+    });
+  } catch(e) {
+    console.warn('FCM init error:', e);
+  }
+}
+
+// طلب إذن الإشعارات وحفظ الـ token
+async function requestNotificationPermission(custId) {
+  if(!messaging || VAPID_KEY === 'YOUR_VAPID_KEY_HERE') return;
+  try {
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted') return;
+
+    // تسجيل Service Worker
+    const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+
+    if(token) {
+      // حفظ الـ token في Firebase مرتبط بالعميل
+      await setDoc(doc(db, "fcm_tokens", custId.toString()), {
+        token,
+        custId: custId.toString(),
+        updatedAt: Date.now()
+      });
+      console.log('FCM token saved');
+    }
+  } catch(e) {
+    console.warn('FCM permission error:', e);
+  }
+}
+
+// إشعار داخل التطبيق (لما يكون مفتوح)
+function showInAppNotification(title, body) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    background:#0d0d14;border:1px solid rgba(124,107,255,0.4);
+    border-radius:16px;padding:14px 20px;z-index:9999;
+    font-family:'Cairo',sans-serif;max-width:320px;width:90%;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:slideDown 0.3s ease;
+    direction:rtl;text-align:right;
+  `;
+  el.innerHTML = `
+    <div style="font-size:0.65rem;color:#a78bfa;font-weight:700;margin-bottom:4px">🔔 ${title}</div>
+    <div style="font-size:0.82rem;color:#e8e8f0">${body}</div>
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(), 300); }, 4000);
+}
 
 // تحميل بيانات العملاء
 async function loadCustomers() {
@@ -419,12 +486,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   const loadEl = document.getElementById('fb-loading');
   const loginEl = document.getElementById('login-screen');
 
+  // تهيئة FCM
+  await initMessaging();
+
   // تحقق من جلسة محفوظة
   const saved = localStorage.getItem('opera_customer_session');
   if(saved) {
     try {
       const sess = JSON.parse(saved);
-      if(sess.custId && (Date.now() - sess.savedAt) < 12 * 3600 * 1000) {
+      if(sess.custId) {  // لا يوجد انتهاء للجلسة — العميل لا يُسجَّل خروجه تلقائياً
         // جلسة لسه شغالة — حمّل وافتح مباشرةً
         const all = await loadCustomers();
         window._allCustomers = all;
@@ -434,6 +504,8 @@ window.addEventListener('DOMContentLoaded', async () => {
           loginEl.style.display = 'none';
           renderPortal(c);
           startSync(sess.custId);
+          // تجديد FCM token
+          setTimeout(() => requestNotificationPermission(c.id), 1500);
           return;
         }
       }
@@ -485,6 +557,9 @@ window.doLogin = function() {
   document.getElementById('login-screen').style.display = 'none';
   renderPortal(c);
   startSync(c.id);
+
+  // طلب إذن الإشعارات بعد الدخول
+  setTimeout(() => requestNotificationPermission(c.id), 2000);
 };
 
 // تسجيل الخروج
