@@ -1595,7 +1595,7 @@ const ONESIGNAL_API_KEY = 'os_v2_app_2zg5x625i5bx3hor5j4iyh6gfxvms4ccfcxehxedlkq
 // إرسال Push لعميل واحد عبر External User ID
 window.sendPushToCustomer = async function(custId, title, body) {
   try {
-    await fetch('https://onesignal.com/api/v1/notifications', {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1603,14 +1603,16 @@ window.sendPushToCustomer = async function(custId, title, body) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        filters: [{ field: 'tag', key: 'custId', relation: '=', value: custId.toString() }],
+        include_aliases: { external_id: [custId.toString()] },
+        target_channel: 'push',
         headings: { ar: title, en: title },
         contents: { ar: body, en: body },
         url: window.location.origin + '/customer.html',
-        android_accent_color: '7c6bff',
-        small_icon: 'ic_stat_onesignal_default'
+        android_accent_color: 'FF7C6BFF'
       })
     });
+    const data = await res.json();
+    console.log('Push sent:', data);
   } catch(e) { console.warn('OneSignal push error:', e); }
 };
 
