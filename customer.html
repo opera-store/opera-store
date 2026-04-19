@@ -375,46 +375,43 @@ const db = getFirestore(app);
 
 // ===== OneSignal Setup =====
 const ONESIGNAL_APP_ID = 'd64ddbfb-5d47-437d-9dd1-ea788c1fc62d';
+let _osInitialized = false;
 
 // تهيئة OneSignal بعد تحميل الصفحة
 function initOneSignal(custId) {
   if(typeof OneSignalDeferred === 'undefined') return;
+
   OneSignalDeferred.push(async function(OneSignal) {
     try {
-      await OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-        notifyButton: { enable: false }, // مش هنظهر الزرار الافتراضي
-        promptOptions: {
-          slidedown: {
-            prompts: [{
-              type: 'push',
-              autoPrompt: false, // هنطلب إذن يدوياً
-              text: {
-                actionMessage: 'اسمح بالإشعارات عشان تعرف لما بيتسجل قسطك',
-                acceptButton: 'اسمح',
-                cancelButton: 'مش دلوقتي'
-              }
-            }]
-          }
-        }
-      });
+      // init مرة واحدة بس
+      if(!_osInitialized) {
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          notifyButton: { enable: false },
+          serviceWorkerParam: { scope: '/' },
+          allowLocalhostAsSecureOrigin: false
+        });
+        _osInitialized = true;
+      }
 
-      // ربط الـ External ID بالعميل عشان نبعتله إشعارات مخصصة
+      // ربط العميل بـ External ID
       await OneSignal.login(custId.toString());
 
-      // إظهار طلب الإذن بعد ثانيتين
+      // طلب الإذن لو لسه ما طلبناهوش
       setTimeout(async () => {
-        const permission = await OneSignal.Notifications.permissionNative;
-        if(permission === 'default') {
-          OneSignal.Slidedown.promptPush();
-        }
+        try {
+          const isPushEnabled = await OneSignal.User.PushSubscription.optedIn;
+          if(!isPushEnabled) {
+            await OneSignal.Notifications.requestPermission();
+          }
+        } catch(e) {}
       }, 2000);
 
-      // استقبال الإشعارات لما التطبيق مفتوح
+      // استقبال الإشعارات لما التطبيق مفتوح (foreground)
       OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
         event.preventDefault();
-        const { title, body } = event.notification;
-        showInAppNotification(title, body);
+        const notif = event.notification;
+        showInAppNotification(notif.title, notif.body);
       });
 
     } catch(e) { console.warn('OneSignal init error:', e); }
