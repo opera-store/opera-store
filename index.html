@@ -1571,6 +1571,55 @@ input, textarea, select { font-size: 0.88rem !important; }
   </div>
 </div>
 
+<!-- ===== OneSignal Push API ===== -->
+<script>
+const _OS_APP_ID  = 'eb630049-0434-4576-bdc5-fda0f9c3b915';
+const _OS_API_KEY = 'os_v2_app_5nrqasiegrcxnpof7wqptq5zcvxguarhwsdehl5ac6uxytgtftuvw6wbod7ncxagker4xmffxs3qkre5kearg6fvnftjovha373sbpq';
+
+window.sendPushToCustomer = async function(custId, title, body) {
+  try {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Key ' + _OS_API_KEY },
+      body: JSON.stringify({
+        app_id: _OS_APP_ID,
+        include_aliases: { external_id: [custId.toString()] },
+        target_channel: 'push',
+        headings: { ar: title, en: title },
+        contents: { ar: body, en: body },
+        url: 'https://opera-store.github.io/opera-customer/customer.html'
+      })
+    });
+    const data = await res.json();
+    if(data.id) {
+      showToast('📬 تم إرسال الإشعار للعميل', 'success', 'fa-bell');
+    } else {
+      console.warn('OneSignal error:', JSON.stringify(data));
+      showToast('❌ فشل إرسال الإشعار: ' + JSON.stringify(data.errors || data), 'error', 'fa-bell');
+    }
+  } catch(e) { console.warn('Push error:', e); }
+};
+
+window.sendPushToAll = async function(title, body) {
+  try {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Key ' + _OS_API_KEY },
+      body: JSON.stringify({
+        app_id: _OS_APP_ID,
+        included_segments: ['All'],
+        headings: { ar: title, en: title },
+        contents: { ar: body, en: body },
+        url: 'https://opera-store.github.io/opera-customer/customer.html'
+      })
+    });
+    const data = await res.json();
+    if(data.id) showToast('📬 تم إرسال الإشعار لكل العملاء', 'success', 'fa-bell');
+    else console.warn('Broadcast error:', JSON.stringify(data));
+  } catch(e) { console.warn('Broadcast error:', e); }
+};
+</script>
+
 <!-- ===== Firebase SDK ===== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1587,59 +1636,6 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
-
-// ===== OneSignal Push Notifications =====
-const ONESIGNAL_APP_ID = 'eb630049-0434-4576-bdc5-fda0f9c3b915';
-const ONESIGNAL_API_KEY = 'os_v2_app_5nrqasiegrcxnpof7wqptq5zcvxguarhwsdehl5ac6uxytgtftuvw6wbod7ncxagker4xmffxs3qkre5kearg6fvnftjovha373sbpq';
-
-// إرسال Push لعميل واحد عبر External User ID
-window.sendPushToCustomer = async function(custId, title, body) {
-  try {
-    const res = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Key ' + ONESIGNAL_API_KEY
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        include_aliases: { external_id: [custId.toString()] },
-        target_channel: 'push',
-        headings: { ar: title, en: title },
-        contents: { ar: body, en: body },
-        url: 'https://opera-store.github.io/opera-customer/customer.html',
-        android_accent_color: 'FF7C6BFF'
-      })
-    });
-    const data = await res.json();
-    console.log('OneSignal push result:', JSON.stringify(data));
-    // DEBUG: اظهر النتيجة على الشاشة مؤقتاً
-    if(typeof showToast === 'function') showToast('Push: ' + (data.id ? '✅ أُرسل' : '❌ ' + JSON.stringify(data.errors || data)), data.id ? 'success' : 'error', 'fa-bell');
-  } catch(e) { console.warn('OneSignal push error:', e); }
-};
-
-// إرسال Push لكل العملاء
-window.sendPushToAll = async function(title, body) {
-  try {
-    const res = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Key ' + ONESIGNAL_API_KEY
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        included_segments: ['All'],
-        headings: { ar: title, en: title },
-        contents: { ar: body, en: body },
-        url: 'https://opera-store.github.io/opera-customer/customer.html',
-        android_accent_color: 'FF7C6BFF'
-      })
-    });
-    const data = await res.json();
-    console.log('OneSignal broadcast result:', JSON.stringify(data));
-  } catch(e) { console.warn('OneSignal broadcast error:', e); }
-};
 
 // ===== حفظ على Firebase + localStorage =====
 window.fbSave = async function(key, data) {
