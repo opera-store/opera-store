@@ -1590,7 +1590,7 @@ const db = getFirestore(fbApp);
 
 // ===== OneSignal Push Notifications =====
 const ONESIGNAL_APP_ID = 'eb630049-0434-4576-bdc5-fda0f9c3b915';
-const ONESIGNAL_API_KEY = 'os_v2_app_2zg5x625i5bx3hor5j4iyh6gfxvms4ccfcxehxedlkqxqfyoeyygmlzgcgs4jmyqwvsuxul77pp3v5fgwlhwyj6imrvcwomgt3vhqci';
+const ONESIGNAL_API_KEY = 'os_v2_app_5nrqasiegrcxnpof7wqptq5zcvxguarhwsdehl5ac6uxytgtftuvw6wbod7ncxagker4xmffxs3qkre5kearg6fvnftjovha373sbpq';
 
 // إرسال Push لعميل واحد عبر External User ID
 window.sendPushToCustomer = async function(custId, title, body) {
@@ -1607,19 +1607,19 @@ window.sendPushToCustomer = async function(custId, title, body) {
         target_channel: 'push',
         headings: { ar: title, en: title },
         contents: { ar: body, en: body },
-        url: window.location.origin + '/customer.html',
+        url: 'https://opera-store.github.io/opera-customer/customer.html',
         android_accent_color: 'FF7C6BFF'
       })
     });
     const data = await res.json();
-    console.log('Push sent:', data);
+    console.log('OneSignal push result:', JSON.stringify(data));
   } catch(e) { console.warn('OneSignal push error:', e); }
 };
 
 // إرسال Push لكل العملاء
 window.sendPushToAll = async function(title, body) {
   try {
-    await fetch('https://onesignal.com/api/v1/notifications', {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1630,10 +1630,12 @@ window.sendPushToAll = async function(title, body) {
         included_segments: ['All'],
         headings: { ar: title, en: title },
         contents: { ar: body, en: body },
-        url: window.location.origin + '/customer.html',
-        android_accent_color: '7c6bff'
+        url: 'https://opera-store.github.io/opera-customer/customer.html',
+        android_accent_color: 'FF7C6BFF'
       })
     });
+    const data = await res.json();
+    console.log('OneSignal broadcast result:', JSON.stringify(data));
   } catch(e) { console.warn('OneSignal broadcast error:', e); }
 };
 
