@@ -1613,6 +1613,8 @@ window.sendPushToCustomer = async function(custId, title, body) {
     });
     const data = await res.json();
     console.log('OneSignal push result:', JSON.stringify(data));
+    // DEBUG: اظهر النتيجة على الشاشة مؤقتاً
+    if(typeof showToast === 'function') showToast('Push: ' + (data.id ? '✅ أُرسل' : '❌ ' + JSON.stringify(data.errors || data)), data.id ? 'success' : 'error', 'fa-bell');
   } catch(e) { console.warn('OneSignal push error:', e); }
 };
 
