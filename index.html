@@ -1368,6 +1368,8 @@ input, textarea, select { font-size: 0.88rem !important; }
       <button class="ghost-btn" id="btn-delete" style="border:1px solid var(--red);color:var(--red)" onclick="deleteCust(activeCustomerId)"><i class="fa-solid fa-trash"></i> حذف</button>
     </div>
     <button id="btn-portal" class="ghost-btn" style="width:100%;margin-top:8px;border:1px solid var(--pink);color:var(--pink)" onclick="openPortalPasswordModal()"><i class="fa-solid fa-door-open"></i> بوابة العميل</button>
+    <!-- زر اختبار الإشعار -->
+    <button id="btn-test-push" class="ghost-btn" style="width:100%;margin-top:8px;border:1px solid var(--accent2);color:var(--accent2)" onclick="testPushNotification()"><i class="fa-solid fa-bell"></i> اختبار إشعار</button>
   </div>
 </div>
 
@@ -2726,15 +2728,13 @@ function processPayment() {
   c.payments.push({amount:amt, date:fmtDate(document.getElementById('payment-date').value), fullDate:d.toISOString(), note:document.getElementById('payment-note').value});
   c.lastActionDate = Date.now(); save();
   logEdit('تسجيل قسط', c.name, `${fmt(amt)} ج.م`);
-  // إرسال Push Notification للعميل
-  if(window.sendPushToCustomer) {
-    const paid2 = c.payments.reduce((s,p) => s+p.amount, 0);
-    const rem2 = (c.total-c.down-(c.earlyDiscount||0)) - paid2;
-    window.sendPushToCustomer(c.id,
-      '✅ تم تسجيل قسطك',
-      `تم استلام ${fmt(amt)} ج.م — المتبقي: ${fmt(Math.max(0,rem2))} ج.م`
-    );
-  }
+  // إرسال Push Notification للعميل — بدون شرط
+  const paid2 = c.payments.reduce((s,p) => s+p.amount, 0);
+  const rem2 = (c.total-c.down-(c.earlyDiscount||0)) - paid2;
+  window.sendPushToCustomer(c.id,
+    '✅ تم تسجيل قسطك',
+    `تم استلام ${fmt(amt)} ج.م — المتبقي: ${fmt(Math.max(0,rem2))} ج.م`
+  );
   document.getElementById('payment-amount').value = '';
   document.getElementById('payment-note').value = '';
   openPaymentModal(activeCustomerId); render();
@@ -3862,6 +3862,15 @@ function clearActivityLog() {
   }
 }
 
+// ===== TEST PUSH =====
+function testPushNotification() {
+  if(!currentUser.isAdmin) return;
+  const c = customers.find(x => x.id === activeCustomerId);
+  if(!c) { showToast('مفيش عميل محدد', 'error', 'fa-exclamation'); return; }
+  showToast(`جاري إرسال إشعار تجريبي لـ ${c.name}...`, 'success', 'fa-spinner');
+  window.sendPushToCustomer(c.id, '🔔 اختبار إشعار', `ده إشعار تجريبي لـ ${c.name}`);
+}
+
 // ===== BROADCAST NOTIFICATION =====
 let _bcType = 'info';
 
@@ -4173,6 +4182,7 @@ window.renderEditLog = renderEditLog;
 window.clearEditLog = clearEditLog;
 window.openDashboard = openDashboard;
 window.unlockScreen = unlockScreen;
+window.testPushNotification = testPushNotification;
 window.openBroadcast = openBroadcast;
 window.selectBcType = selectBcType;
 window.sendBroadcastToPortal = sendBroadcastToPortal;
