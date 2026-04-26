@@ -1280,10 +1280,41 @@ input, textarea, select { font-size: 0.88rem !important; }
 <div class="modal-overlay" id="settle-modal">
   <div class="modal-panel">
     <div class="back-btn" onclick="closeM('settle-modal')">إلغاء</div>
-    <div class="modal-title">تسوية سداد مبكر</div>
-    <div class="field"><label>المبلغ المطلوب دفعه الآن</label><input type="number" id="settle-amount" placeholder="أدخل المبلغ"></div>
-    <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.7">سيتم دفع هذا المبلغ وإسقاط باقي المديونية وخصمها من الأرباح.</p>
-    <button class="btn" style="background:var(--orange);color:#1a0a00;width:100%" onclick="processEarlySettlement()"><i class="fa-solid fa-handshake"></i> تأكيد السداد والتسوية</button>
+    <div class="modal-title">🤝 حاسبة السداد المبكر</div>
+
+    <!-- بيانات العميل (للعرض فقط) -->
+    <div id="settle-info-bar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:0.72rem;color:var(--muted);line-height:1.9"></div>
+
+    <!-- نسبة الربح الشهرية (قابلة للتعديل) -->
+    <div class="field" style="margin-bottom:10px">
+      <label style="font-size:0.72rem">نسبة الربح الشهرية (%) <small style="color:var(--muted)">- عدّلها إذا لزم</small></label>
+      <input type="number" id="settle-profit-rate" placeholder="5" value="5" step="0.5" oninput="calcEarlySettlement()" style="min-height:38px">
+    </div>
+
+    <!-- نتائج الحساب -->
+    <div id="settle-results" style="display:none;animation:fadeIn 0.3s ease">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px" id="settle-cards-grid"></div>
+      <div style="background:linear-gradient(135deg,rgba(251,146,60,0.12),rgba(248,113,113,0.08));border:1px solid rgba(251,146,60,0.25);border-radius:var(--radius);padding:12px;margin-bottom:12px;text-align:center">
+        <div style="font-size:0.6rem;color:var(--muted);margin-bottom:3px">إجمالي المطلوب للسداد المبكر</div>
+        <div id="settle-total-today" style="font-size:1.4rem;font-weight:900;color:var(--orange)">0 ج.م</div>
+        <div id="settle-saving-note" style="font-size:0.62rem;color:var(--green);margin-top:4px"></div>
+      </div>
+
+      <!-- حقل التأكيد -->
+      <div class="field" style="margin-bottom:10px">
+        <label style="font-size:0.72rem">المبلغ المستلم فعلياً <small style="color:var(--muted)">- يمكن تعديله</small></label>
+        <input type="number" id="settle-amount" placeholder="0" style="min-height:38px">
+      </div>
+      <button class="btn" style="background:var(--orange);color:#1a0a00;width:100%;margin-bottom:6px" onclick="processEarlySettlement()">
+        <i class="fa-solid fa-handshake"></i> تأكيد السداد والتسوية
+      </button>
+      <p style="font-size:0.62rem;color:var(--muted);text-align:center;line-height:1.7">سيتم تسجيل المبلغ المستلم وإسقاط باقي المديونية تلقائياً من الأرباح.</p>
+    </div>
+
+    <div id="settle-loading" style="text-align:center;padding:20px;color:var(--muted);font-size:0.8rem">
+      <i class="fa-solid fa-calculator" style="font-size:1.5rem;margin-bottom:8px;display:block;color:var(--accent2)"></i>
+      أدخل نسبة الربح لعرض النتائج
+    </div>
   </div>
 </div>
 
@@ -1353,7 +1384,7 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div id="payment-history"></div>
 
     <div class="actions-grid" id="cust-actions-grid">
-      <button class="ghost-btn" id="btn-settle" style="border:1px solid var(--orange);color:var(--orange)" onclick="openM('settle-modal')"><i class="fa-solid fa-handshake"></i> سداد مبكر</button>
+      <button class="ghost-btn" id="btn-settle" style="border:1px solid var(--orange);color:var(--orange)" onclick="openSettleModal()"><i class="fa-solid fa-handshake"></i> سداد مبكر</button>
       <button class="ghost-btn" id="btn-edit" style="border:1px solid var(--blue);color:var(--blue)" onclick="openEditModal()"><i class="fa-solid fa-pen"></i> تعديل</button>
       <button id="btn-archive-cust" class="ghost-btn" style="border:1px solid var(--accent2);color:var(--accent2)" onclick="archiveCustomer()"><i class="fa-solid fa-box-archive"></i> أرشيف</button>
       <button class="ghost-btn" id="btn-delete" style="border:1px solid var(--red);color:var(--red)" onclick="deleteCust(activeCustomerId)"><i class="fa-solid fa-trash"></i> حذف</button>
@@ -2673,6 +2704,88 @@ function openPaymentModal(id) {
       </div>
     </div>`).reverse().join('') || '<div class="empty" style="padding:20px"><i class="fa-solid fa-receipt"></i><p>لا توجد دفعات</p></div>';
   openM('payment-modal');
+}
+
+function openSettleModal() {
+  // reset
+  document.getElementById('settle-results').style.display = 'none';
+  document.getElementById('settle-loading').style.display = 'block';
+  document.getElementById('settle-profit-rate').value = '5';
+  document.getElementById('settle-amount').value = '';
+  openM('settle-modal');
+  // احسب تلقائياً بعد فتح المودال
+  setTimeout(calcEarlySettlement, 80);
+}
+
+function calcEarlySettlement() {
+  const c = customers.find(x => x.id === activeCustomerId); if(!c) return;
+
+  const r = parseFloat(document.getElementById('settle-profit-rate').value);
+  if(isNaN(r) || r < 0) {
+    document.getElementById('settle-results').style.display = 'none';
+    document.getElementById('settle-loading').style.display = 'block';
+    return;
+  }
+
+  // بيانات العميل
+  const totalContract = c.total;           // إجمالي مبلغ العقد
+  const down = c.down || 0;               // المقدم
+  const monthly = c.monthly || 0;
+  const N = monthly > 0 ? Math.ceil((totalContract - down) / monthly) : 0; // إجمالي الشهور
+  const paid = c.payments.reduce((s,p) => s+p.amount, 0);
+  const ed = c.earlyDiscount || 0;
+
+  // الشهور المدفوعة والمتأخرة
+  const paidMonths = monthly > 0 ? Math.floor((paid + ed) / monthly) : 0;
+  const due = calculateDueAmount(c);
+  const lateMonths = monthly > 0 ? Math.ceil(due / monthly) : 0;
+  const remainingMonths = Math.max(0, N - paidMonths - lateMonths);
+
+  // حساب سعر الكاش (أصل المنتج بدون أرباح)
+  const financedCash = N > 0 && r > 0 ? totalContract / (1 + (r / 100) * N) : (totalContract - down);
+  const cashPrice = financedCash + down;
+  const principalPerMonth = N > 0 ? cashPrice / N : 0;
+
+  // المتأخرات (بقيمة القسط كامل)
+  const lateAmount = monthly * lateMonths;
+
+  // السداد المبكر = أصل الأقساط المتبقية فقط
+  const earlySettlement = principalPerMonth * remainingMonths;
+  const fullRemaining = monthly * remainingMonths;
+  const discount = fullRemaining - earlySettlement;
+  const totalToday = lateAmount + earlySettlement;
+  const saving = (totalContract - down - paid - ed) - totalToday;
+
+  // عرض بار المعلومات
+  document.getElementById('settle-info-bar').innerHTML =
+    `<span style="color:var(--accent2);font-weight:700">${c.name}</span> &nbsp;·&nbsp; ${c.prod} &nbsp;·&nbsp; قسط: <b style="color:var(--text)">${fmt(monthly)}</b> &nbsp;·&nbsp; يوم ${c.dueDay}` +
+    `<br>إجمالي العقد: <b style="color:var(--text)">${fmt(totalContract)}</b> &nbsp;·&nbsp; المقدم: <b>${fmt(down)}</b> &nbsp;·&nbsp; مدفوع: <b style="color:var(--green)">${fmt(paid)}</b>` +
+    (lateMonths > 0 ? `&nbsp;·&nbsp; <span style="color:var(--red)">متأخر ${lateMonths} شهر</span>` : '');
+
+  // بطاقات النتائج
+  const cards = [
+    { lbl: 'سعر الكاش (الأصل)', val: fmt(cashPrice), color: 'var(--blue)' },
+    { lbl: 'القسط الشهري', val: fmt(monthly), color: 'var(--text)' },
+    { lbl: `متأخرات (${lateMonths} شهر)`, val: fmt(lateAmount), color: lateAmount > 0 ? 'var(--red)' : 'var(--muted)' },
+    { lbl: `سداد مبكر (${remainingMonths} شهر)`, val: fmt(earlySettlement), color: 'var(--orange)' },
+    { lbl: 'خصم الأرباح (التعجيل)', val: fmt(discount), color: 'var(--green)' },
+    { lbl: 'لو استمر التقسيط', val: fmt(fullRemaining), color: 'var(--muted)' },
+  ];
+  document.getElementById('settle-cards-grid').innerHTML = cards.map(cd =>
+    `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-height:52px;display:flex;flex-direction:column;justify-content:center">
+      <div style="font-size:0.55rem;color:var(--muted);margin-bottom:2px">${cd.lbl}</div>
+      <div style="font-size:0.88rem;font-weight:800;color:${cd.color}">${cd.val}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('settle-total-today').textContent = fmt(totalToday) + ' ج.م';
+  document.getElementById('settle-saving-note').textContent = saving > 0 ? `وفر ${fmt(saving)} ج.م مقارنة باستكمال التقسيط` : '';
+
+  // ضع المبلغ المحسوب في خانة التأكيد تلقائياً
+  document.getElementById('settle-amount').value = Math.round(totalToday);
+
+  document.getElementById('settle-results').style.display = 'block';
+  document.getElementById('settle-loading').style.display = 'none';
 }
 
 function processEarlySettlement() {
@@ -4502,6 +4615,8 @@ window.openEditModal = openEditModal;
 window.updateCustomerInfo = updateCustomerInfo;
 window.openPaymentModal = openPaymentModal;
 window.processEarlySettlement = processEarlySettlement;
+window.openSettleModal = openSettleModal;
+window.calcEarlySettlement = calcEarlySettlement;
 window.processPayment = processPayment;
 window.deletePayment = deletePayment;
 window.deleteCust = deleteCust;
