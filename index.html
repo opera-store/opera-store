@@ -252,81 +252,6 @@ body::before {
 .mini-progress { height:3px; background:rgba(120,120,200,0.12); border-radius:10px; margin-top:8px; overflow:hidden; }
 .mini-progress-fill { height:100%; border-radius:10px; transition:width 0.6s cubic-bezier(.4,0,.2,1); }
 
-/* ===== CUSTOMER PORTAL ===== */
-#customer-portal {
-  display: none;
-  min-height: 100vh;
-  padding: 16px 16px 60px;
-  background: var(--bg);
-}
-#dashboard-main { display: none; }
-.portal-header {
-  text-align: center;
-  padding: 20px 0 24px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-.portal-header h1 {
-  font-size: 1.3rem; font-weight: 900;
-  background: linear-gradient(135deg, #fff, var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.portal-header p { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
-.portal-status-badge {
-  display: inline-block; padding: 4px 16px; border-radius: 20px;
-  font-size: 0.7rem; font-weight: 700; margin: 10px auto 0;
-}
-.portal-section {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius2); padding: 16px; margin-bottom: 14px;
-}
-.portal-section-title {
-  font-size: 0.72rem; color: var(--accent2); font-weight: 700;
-  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
-}
-.portal-progress {
-  height: 10px; background: var(--surface3); border-radius: 10px;
-  overflow: hidden; margin: 10px 0 6px;
-}
-.portal-progress-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
-.portal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.portal-stat {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px; text-align: center;
-}
-.portal-stat .lbl { font-size: 0.58rem; color: var(--muted); display: block; margin-bottom: 4px; }
-.portal-stat .val { font-size: 1rem; font-weight: 800; }
-.portal-pay-row {
-  display: grid; grid-template-columns: 1fr 1.2fr 0.8fr;
-  align-items: center; padding: 10px 0;
-  border-bottom: 1px solid var(--border); font-size: 0.78rem;
-}
-.portal-pay-row:last-child { border-bottom: none; }
-.portal-msg-box {
-  background: linear-gradient(135deg, rgba(124,107,255,0.08), rgba(167,139,250,0.05));
-  border: 1px solid rgba(124,107,255,0.2); border-radius: var(--radius);
-  padding: 14px; margin-bottom: 14px;
-}
-.portal-msg-box .msg-label {
-  font-size: 0.65rem; color: var(--accent2); font-weight: 700;
-  margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
-}
-.portal-msg-box .msg-text { font-size: 0.82rem; color: var(--text); line-height: 1.6; }
-.portal-wa-btn {
-  background: #25d366; color: #fff; border: none; border-radius: var(--radius);
-  padding: 14px; width: 100%; font-family: 'Cairo', sans-serif;
-  font-weight: 700; font-size: 0.95rem; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 4px; box-shadow: 0 4px 15px rgba(37,211,102,0.25);
-}
-.portal-logout-btn {
-  background: transparent; color: var(--muted); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 10px; width: 100%;
-  font-family: 'Cairo', sans-serif; font-size: 0.8rem; cursor: pointer;
-  margin-top: 10px;
-}
-/* Portal password modal */
-#portal-password-modal .modal-panel { max-width: 400px; height: auto; border-radius: 24px; }
 .actions-bar {
   display:flex; gap:8px; margin-bottom:18px;
   align-items:center; flex-wrap:wrap;
@@ -786,7 +711,6 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div class="login-tabs">
       <button class="login-tab active" id="tab-admin" onclick="switchLoginTab('admin')">مدير</button>
       <button class="login-tab" id="tab-staff" onclick="switchLoginTab('staff')">موظف</button>
-      <button class="login-tab" id="tab-customer" onclick="switchLoginTab('customer')">عميل</button>
     </div>
     <div class="login-input">
       <label id="login-user-label">اسم المستخدم</label>
@@ -808,113 +732,6 @@ input, textarea, select { font-size: 0.88rem !important; }
 <!-- ===== MAIN APP ===== -->
 <div id="app-main">
 
-<!-- ===== CUSTOMER PORTAL ===== -->
-<div id="customer-portal">
-  <div style="max-width:500px;margin:0 auto">
-    <div class="portal-header">
-      <h1 style="display:flex;align-items:center;justify-content:center;gap:10px"><img src="https://www.image2url.com/r2/default/images/1776870433523-562e3357-be93-428f-8cee-feb67e58c10d.png" alt="OPERA" style="height:36px;width:36px;object-fit:contain;vertical-align:middle;border-radius:6px"> OPERA STORE</h1>
-      <p>بوابة العميل — حسابي</p>
-      <div id="portal-status-badge" class="portal-status-badge"></div>
-    </div>
-
-    <!-- تنبيه كلمة المرور الافتراضية -->
-    <div id="portal-default-pass-warning" style="display:none;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:0.75rem;color:var(--orange);line-height:1.6;text-align:center">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      كلمة مرورك الحالية هي <strong>0000</strong> — يُنصح بتغييرها من زر "تغيير كلمة المرور" أسفل الصفحة
-    </div>
-
-    <!-- رسالة من المتجر -->
-    <div id="portal-msg-container" style="display:none" class="portal-msg-box">
-      <div class="msg-label"><i class="fa-solid fa-bell"></i> رسالة من المتجر</div>
-      <div id="portal-msg-text" class="msg-text"></div>
-    </div>
-
-    <!-- معلومات العقد -->
-    <div class="portal-section">
-      <div class="portal-section-title"><i class="fa-solid fa-file-contract"></i> تفاصيل العقد</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;font-size:0.85rem">
-          <span style="color:var(--muted)">العميل</span>
-          <span id="portal-cust-name" style="font-weight:700"></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.85rem">
-          <span style="color:var(--muted)">المنتج</span>
-          <span id="portal-prod-name" style="font-weight:700;color:var(--accent2)"></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.85rem">
-          <span style="color:var(--muted)">القسط الشهري</span>
-          <span id="portal-monthly" style="font-weight:700;color:var(--blue)"></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.85rem">
-          <span style="color:var(--muted)">يوم الاستحقاق</span>
-          <span id="portal-due-day" style="font-weight:700"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- تقدم السداد -->
-    <div class="portal-section">
-      <div class="portal-section-title"><i class="fa-solid fa-chart-line"></i> تقدم السداد</div>
-      <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:4px">
-        <span>نسبة السداد</span>
-        <span id="portal-pct" style="font-weight:700;color:var(--text)">0%</span>
-      </div>
-      <div class="portal-progress">
-        <div id="portal-progress-fill" class="portal-progress-fill"></div>
-      </div>
-      <div class="portal-stats" style="margin-top:12px">
-        <div class="portal-stat">
-          <span class="lbl">إجمالي العقد</span>
-          <span class="val" id="portal-total"></span>
-        </div>
-        <div class="portal-stat">
-          <span class="lbl">المدفوع</span>
-          <span class="val" id="portal-paid" style="color:var(--green)"></span>
-        </div>
-        <div class="portal-stat">
-          <span class="lbl">المتبقي</span>
-          <span class="val" id="portal-remaining" style="color:var(--red)"></span>
-        </div>
-        <div class="portal-stat">
-          <span class="lbl">المتأخر</span>
-          <span class="val" id="portal-due" style="color:var(--orange)"></span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <div class="portal-stat">
-          <span class="lbl">أقساط مدفوعة</span>
-          <span class="val" id="portal-paid-months" style="color:var(--green)"></span>
-        </div>
-        <div class="portal-stat">
-          <span class="lbl">أقساط متبقية</span>
-          <span class="val" id="portal-rem-months" style="color:var(--accent2)"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- سجل الدفعات -->
-    <div class="portal-section">
-      <div class="portal-section-title"><i class="fa-solid fa-receipt"></i> سجل الدفعات</div>
-      <div id="portal-payments-list"></div>
-    </div>
-
-    <!-- تواصل مع الدعم -->
-    <div class="portal-section">
-      <div class="portal-section-title"><i class="fa-brands fa-whatsapp"></i> تواصل مع الدعم</div>
-      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">سيتم إرسال ملخص حسابك تلقائياً مع الرسالة</p>
-      <button class="portal-wa-btn" onclick="portalContactSupport()">
-        <i class="fa-brands fa-whatsapp"></i> تواصل عبر واتساب
-      </button>
-    </div>
-
-    <button class="portal-logout-btn" onclick="portalLogout()">
-      <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
-    </button>
-    <button class="portal-logout-btn" onclick="openPortalChangePassword()" style="margin-top:8px;border-color:var(--accent);color:var(--accent2)">
-      <i class="fa-solid fa-key"></i> تغيير كلمة المرور
-    </button>
-  </div>
-</div>
 
 <!-- ===== PORTAL PASSWORD MODAL (من داخل لوحة التحكم) ===== -->
 <div class="modal-overlay" id="portal-password-modal">
@@ -1835,13 +1652,7 @@ window.loadAllFromFirebase = async function() {
       // أظهر التطبيق مباشرةً بدون شاشة login
       if(loginEl) loginEl.style.display = 'none';
       const appEl = document.getElementById('app-main');
-      if(appEl) appEl.style.display = 'block';
-      if(window._autoLogin.isCustomer) {
-        // جلسة عميل — افتح البوابة
-        const dashEl = document.getElementById('dashboard-main');
-        if(dashEl) dashEl.style.display = 'none';
-        if(typeof openCustomerPortal === 'function') openCustomerPortal(window._autoLogin.customerId);
-      } else {
+      if(appEl) appEl.style.display = 'block'; else {
         // جلسة مدير/موظف
         const dashEl = document.getElementById('dashboard-main');
         if(dashEl) dashEl.style.display = 'block';
@@ -1922,7 +1733,6 @@ loadRememberedUsername();
 function switchLoginTab(type) {
   document.getElementById('tab-admin').classList.toggle('active', type === 'admin');
   document.getElementById('tab-staff').classList.toggle('active', type === 'staff');
-  document.getElementById('tab-customer').classList.toggle('active', type === 'customer');
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
   document.getElementById('login-error').textContent = '';
@@ -1954,28 +1764,7 @@ function attemptLogin() {
   const p = document.getElementById('login-password').value;
   const err = document.getElementById('login-error');
   const isAdminTab = document.getElementById('tab-admin').classList.contains('active');
-  const isCustomerTab = document.getElementById('tab-customer').classList.contains('active');
 
-  if(isCustomerTab) {
-    const phone = u.replace(/\D/g, '');
-    const cust = customers.find(c => {
-      const cp = (c.phone||'').replace(/\D/g, '');
-      return cp === phone || cp === phone.replace(/^0/, '2') || phone === cp.replace(/^2/, '0');
-    });
-    if(!cust) { err.textContent = '❌ رقم الهاتف غير مسجل'; logActivity('customer_fail', {phone: u, reason: 'رقم غير مسجل'}); return; }
-    // كل العملاء مفعّلين تلقائياً — لو مفيش كلمة مرور اعتبرها 0000
-    const effectivePass = cust.portalPassword || '0000';
-    const validCustPass = cust.portalPasswordChanged ? (p === effectivePass) : (p === '0000' || p === effectivePass);
-    if(!validCustPass) { err.textContent = '❌ كلمة المرور غير صحيحة'; logActivity('customer_fail', {phone: u, name: cust.name, reason: 'كلمة مرور خاطئة'}); return; }
-    // دخول ناجح
-    logActivity('customer_login', {name: cust.name, phone: cust.phone, custId: cust.id});
-    currentUser = { username: phone, isAdmin: false, isCustomer: true, customerId: cust.id, customerName: cust.name };
-    saveRememberedUsername(u, false);
-    localStorage.setItem('opera_session_v2', JSON.stringify({ user: currentUser, savedAt: Date.now() }));
-    document.getElementById('login-screen').style.display = 'none';
-    openCustomerPortal(cust.id);
-    return;
-  }
 
   if(isAdminTab) {
     if(u === USER_CREDENTIALS.username && p === USER_CREDENTIALS.password) {
@@ -2030,7 +1819,6 @@ function _doLoginSuccess() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-main').style.display = 'block';
   document.getElementById('dashboard-main').style.display = 'block';
-  document.getElementById('customer-portal').style.display = 'none';
   document.getElementById('login-error').textContent = '';
   applyPermissions();
   if(!window.appInitialized) {
@@ -2051,8 +1839,6 @@ function logout() {
   document.getElementById('app-main').style.display = 'none';
   const dash = document.getElementById('dashboard-main');
   if(dash) dash.style.display = 'none';
-  const portal = document.getElementById('customer-portal');
-  if(portal) portal.style.display = 'none';
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
   switchLoginTab('admin');
@@ -3815,15 +3601,11 @@ if(_dashEl) _dashEl.style.display = 'none';
 if(window.firebaseReady && window._autoLogin) {
   currentUser = window._autoLogin;
   document.getElementById('app-main').style.display = 'block';
-  if(currentUser.isCustomer) {
-    openCustomerPortal(currentUser.customerId);
-  } else {
-    if(_dashEl) _dashEl.style.display = 'block';
-    initApp();
-    window.appInitialized = true;
-    applyPermissions();
-    if(window.startRealtimeSync) window.startRealtimeSync();
-  }
+  if(_dashEl) _dashEl.style.display = 'block';
+  initApp();
+  window.appInitialized = true;
+  applyPermissions();
+  if(window.startRealtimeSync) window.startRealtimeSync();
 } else if(window.firebaseReady) {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-username').focus();
@@ -4591,161 +4373,6 @@ function clearBroadcast() {
 }
 
 // ===== PORTAL CHANGE PASSWORD (للعميل) =====
-function openPortalChangePassword() {
-  document.getElementById('portal-old-pass').value = '';
-  document.getElementById('portal-new-pass').value = '';
-  document.getElementById('portal-confirm-pass').value = '';
-  document.getElementById('portal-pass-error').textContent = '';
-  openM('portal-change-pass-modal');
-}
-
-function savePortalChangePassword() {
-  const oldPass = document.getElementById('portal-old-pass').value;
-  const newPass = document.getElementById('portal-new-pass').value;
-  const confirmPass = document.getElementById('portal-confirm-pass').value;
-  const errEl = document.getElementById('portal-pass-error');
-
-  const c = customers.find(x => x.id === window._portalCustomerId);
-  if(!c) return;
-
-  // التحقق من كلمة المرور الحالية
-  const validOld = c.portalPasswordChanged ? (oldPass === c.portalPassword) : (oldPass === '0000' || oldPass === c.portalPassword);
-  if(!validOld) { errEl.textContent = '❌ كلمة المرور الحالية غير صحيحة'; return; }
-  if(newPass.length < 4) { errEl.textContent = '❌ كلمة المرور الجديدة قصيرة جداً (4 أرقام على الأقل)'; return; }
-  if(newPass !== confirmPass) { errEl.textContent = '❌ كلمة المرور الجديدة غير متطابقة'; return; }
-  if(newPass === '0000') { errEl.textContent = '❌ لا يمكن استخدام 0000 ككلمة مرور'; return; }
-
-  c.portalPassword = newPass;
-  c.portalPasswordChanged = true;
-  save();
-  closeM('portal-change-pass-modal');
-  showToast('تم تغيير كلمة المرور بنجاح ✅', 'success', 'fa-check');
-}
-
-// ===== CUSTOMER PORTAL FUNCTIONS =====
-function openCustomerPortal(custId) {
-  const c = customers.find(x => x.id === custId);
-  if(!c) return;
-  const ed = c.earlyDiscount||0, itc = c.total - c.down - ed;
-  const paid = c.payments.reduce((s,p) => s+p.amount, 0);
-  const rem = itc - paid;
-  const due = calculateDueAmount(c);
-  const pct = itc > 0 ? Math.min(100, Math.round((paid/itc)*100)) : 0;
-  const tm = c.monthly > 0 ? Math.ceil((c.total-c.down)/c.monthly) : 0;
-  const paidMonths = c.monthly > 0 ? Math.floor((paid+ed)/c.monthly) : 0;
-  const remMonths = Math.max(0, tm - paidMonths);
-  const status = getCardStatus(c);
-  const statusMap = {ok:['منتظم','rgba(52,211,153,0.15)','var(--green)'],warn:['تأخير بسيط','rgba(251,146,60,0.15)','var(--orange)'],bad:['متأخر','rgba(248,113,113,0.15)','var(--red)'],done:['مكتمل','rgba(107,107,138,0.15)','var(--muted)']};
-  const [sl, sbg, sc] = statusMap[status] || statusMap.ok;
-  const progColor = status==='bad'?'var(--red)':status==='warn'?'var(--orange)':status==='done'?'var(--muted)':'var(--green)';
-
-  // رسالة من المتجر (شخصية أو جماعية)
-  const msgContainer = document.getElementById('portal-msg-container');
-  const msgText = document.getElementById('portal-msg-text');
-  const displayMsg = c.broadcastMsg || (c.portalMessage ? {title: '📩 رسالة من المتجر', body: c.portalMessage} : null);
-  if(displayMsg) {
-    msgContainer.style.display = 'block';
-    const typeIcon = displayMsg.type === 'offer' ? '🏷️' : displayMsg.type === 'warn' ? '⚠️' : '📢';
-    msgText.innerHTML = `<strong>${typeIcon} ${displayMsg.title || ''}</strong><br><span style="font-size:0.82rem">${displayMsg.body || displayMsg}</span>` +
-      (displayMsg.sentAt ? `<br><span style="font-size:0.6rem;color:var(--muted)">${displayMsg.sentAt}</span>` : '');
-  } else {
-    msgContainer.style.display = 'none';
-  }
-
-  // تنبيه لو كلمة المرور لسه 0000
-  const warningEl = document.getElementById('portal-default-pass-warning');
-  if(warningEl) {
-    if(!c.portalPasswordChanged) {
-      warningEl.style.display = 'block';
-    } else {
-      warningEl.style.display = 'none';
-    }
-  }
-
-  // بيانات العقد
-  document.getElementById('portal-cust-name').textContent = c.name;
-  document.getElementById('portal-prod-name').textContent = c.prod || '--';
-  document.getElementById('portal-monthly').textContent = fmt(c.monthly) + ' ج.م';
-  document.getElementById('portal-due-day').textContent = 'يوم ' + c.dueDay;
-  const badge = document.getElementById('portal-status-badge');
-  badge.textContent = sl; badge.style.background = sbg; badge.style.color = sc;
-
-  // تقدم السداد
-  document.getElementById('portal-pct').textContent = pct + '%';
-  const fill = document.getElementById('portal-progress-fill');
-  fill.style.width = pct + '%'; fill.style.background = progColor;
-  document.getElementById('portal-total').textContent = fmt(itc) + ' ج.م';
-  document.getElementById('portal-paid').textContent = fmt(paid) + ' ج.م';
-  document.getElementById('portal-remaining').textContent = fmt(Math.max(0,rem)) + ' ج.م';
-  document.getElementById('portal-due').textContent = due > 0 ? fmt(due) + ' ج.م' : 'لا يوجد';
-  document.getElementById('portal-due').style.color = due > 0 ? 'var(--orange)' : 'var(--green)';
-  document.getElementById('portal-paid-months').textContent = paidMonths + ' قسط';
-  document.getElementById('portal-rem-months').textContent = remMonths + ' قسط';
-
-  // سجل الدفعات
-  const payList = document.getElementById('portal-payments-list');
-  if(c.payments.length === 0) {
-    payList.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:0.8rem">لا توجد دفعات مسجلة</div>';
-  } else {
-    payList.innerHTML = `
-      <div class="portal-pay-row" style="font-size:0.65rem;color:var(--muted);border-bottom:1px solid var(--border2);padding-bottom:6px;margin-bottom:4px">
-        <span>المبلغ</span><span>التاريخ</span><span>المرجع</span>
-      </div>` +
-      [...c.payments].reverse().map(p => `
-      <div class="portal-pay-row">
-        <span style="font-weight:700;color:var(--green)">${fmt(p.amount)} ج.م</span>
-        <span style="color:var(--muted);font-size:0.72rem">${p.date}</span>
-        <span style="color:var(--accent2);font-size:0.65rem;font-weight:700">${p.ref ? '#'+p.ref : (p.note||'--')}</span>
-      </div>`).join('');
-  }
-
-  // إظهار البوابة
-  document.getElementById('app-main').style.display = 'block';
-  document.getElementById('customer-portal').style.display = 'block';
-  const dash = document.getElementById('dashboard-main');
-  if(dash) dash.style.display = 'none';
-
-  // حفظ ID العميل الحالي للبوابة
-  window._portalCustomerId = custId;
-}
-
-function portalLogout() {
-  logout();
-}
-
-function portalContactSupport() {
-  const c = customers.find(x => x.id === window._portalCustomerId);
-  if(!c) return;
-  const paid = c.payments.reduce((s,p) => s+p.amount, 0);
-  const ed = c.earlyDiscount||0, itc = c.total-c.down-ed;
-  const due = calculateDueAmount(c);
-  const msg = `مرحباً، أنا العميل ${c.name}%0Aالمنتج: ${c.prod||'--'}%0Aإجمالي العقد: ${fmt(itc)} ج.م%0Aالمدفوع: ${fmt(paid)} ج.م%0Aالمتبقي: ${fmt(Math.max(0,itc-paid))} ج.م%0Aالمتأخر: ${fmt(due)} ج.م%0A%0Aأريد الاستفسار عن:`;
-  window.open(`https://wa.me/201009144655?text=${msg}`, '_blank');
-}
-
-function openPortalPasswordModal() {
-  if(!currentUser.isAdmin) { showToast('المدير فقط', 'error', 'fa-lock'); return; }
-  const c = customers.find(x => x.id === activeCustomerId);
-  if(!c) return;
-  const statusEl = document.getElementById('portal-current-status');
-  statusEl.textContent = c.portalPassword ? `✅ البوابة مفعّلة — كلمة المرور الحالية: ${c.portalPassword}` : '🔴 البوابة غير مفعّلة لهذا العميل';
-  document.getElementById('portal-password-input').value = c.portalPassword || '';
-  document.getElementById('portal-admin-msg').value = c.portalMessage || '';
-  openM('portal-password-modal');
-}
-
-function savePortalPassword() {
-  if(!currentUser.isAdmin) return;
-  const c = customers.find(x => x.id === activeCustomerId);
-  if(!c) return;
-  const pass = document.getElementById('portal-password-input').value.trim();
-  const msg = document.getElementById('portal-admin-msg').value.trim();
-  c.portalPassword = pass || null;
-  c.portalMessage = msg || null;
-  save();
-  closeM('portal-password-modal');
-  showToast(pass ? `✅ تم تفعيل بوابة ${c.name}` : `🔴 تم إلغاء بوابة ${c.name}`, 'success', 'fa-door-open');
-}
 
 // Global functions for HTML onclick
 function printLastReceipt() {
@@ -4819,11 +4446,6 @@ window.sendWA = sendWA;
 window.sendSavWA = sendSavWA;
 window.openStaffSettingsModal = openStaffSettingsModal;
 window.changeStaffPassword = changeStaffPassword;
-window.openPortalPasswordModal = openPortalPasswordModal;
-window.savePortalPassword = savePortalPassword;
-window.portalLogout = portalLogout;
-window.portalContactSupport = portalContactSupport;
-window.openCustomerPortal = openCustomerPortal;
 window.openActivityLog = openActivityLog;
 window.renderActivityLog = renderActivityLog;
 window.clearActivityLog = clearActivityLog;
@@ -4837,8 +4459,6 @@ window.selectBcType = selectBcType;
 window.sendBroadcastToPortal = sendBroadcastToPortal;
 window.sendBroadcastWhatsApp = sendBroadcastWhatsApp;
 window.clearBroadcast = clearBroadcast;
-window.openPortalChangePassword = openPortalChangePassword;
-window.savePortalChangePassword = savePortalChangePassword;
 </script>
 </body>
 </html>
