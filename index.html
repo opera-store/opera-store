@@ -973,7 +973,6 @@ input, textarea, select { font-size: 0.88rem !important; }
     <div class="menu-section-label">💬 التواصل</div>
     <button class="menu-btn" onclick="openCustomMsgs()"><i class="fa-solid fa-comment-dots" style="color:var(--green)"></i> رسائل مخصصة</button>
     <button class="menu-btn" id="menu-broadcast-btn" onclick="openBroadcast()"><i class="fa-solid fa-tower-broadcast" style="color:var(--pink)"></i> إشعار لكل العملاء</button>
-    <button class="menu-btn" onclick="enableNotifications()"><i class="fa-solid fa-bell" style="color:var(--orange)"></i> تفعيل الإشعارات الذكية</button>
 
     <!-- قسم: السجلات والمتابعة -->
     <div class="menu-section-label">📋 السجلات والمتابعة</div>
@@ -3226,51 +3225,6 @@ function printReceipt(custId, payIdx) {
 }
 
 // ===== SMART NOTIFICATIONS (تذكيرات ذكية) =====
-function checkSmartNotifications() {
-  if(!('Notification' in window)) return;
-  const today = new Date().getDate();
-  const overdueCustomers = customers.filter(c => !c.archived && calculateDueAmount(c) > 0);
-  const upcomingCustomers = customers.filter(c => {
-    if(c.archived) return false;
-    const paid = c.payments.reduce((s,p)=>s+p.amount,0);
-    const rem = (c.total-c.down-(c.earlyDiscount||0)) - paid;
-    return rem > 0 && Math.abs(c.dueDay - today) <= 2;
-  });
-
-  if(Notification.permission === 'granted') {
-    if(overdueCustomers.length > 0) {
-      new Notification('🔴 OPERA STORE — متأخرات', {
-        body: `${overdueCustomers.length} عميل لديهم متأخرات تحتاج تحصيل`,
-        icon: '📊'
-      });
-    } else if(upcomingCustomers.length > 0) {
-      new Notification('📋 OPERA STORE — استحقاقات قريبة', {
-        body: `${upcomingCustomers.length} عميل موعد قسطهم خلال يومين`,
-        icon: '📊'
-      });
-    }
-  } else if(Notification.permission !== 'denied') {
-    Notification.requestPermission().then(perm => {
-      if(perm === 'granted') checkSmartNotifications();
-    });
-  }
-}
-
-function enableNotifications() {
-  if(!('Notification' in window)) {
-    showToast('المتصفح لا يدعم الإشعارات', 'error', 'fa-bell-slash');
-    return;
-  }
-  Notification.requestPermission().then(perm => {
-    if(perm === 'granted') {
-      showToast('✅ تم تفعيل الإشعارات', 'success', 'fa-bell');
-      checkSmartNotifications();
-    } else {
-      showToast('تم رفض إذن الإشعارات', 'error', 'fa-bell-slash');
-    }
-  });
-}
-
 // ===== BRUTE FORCE PROTECTION =====
 const loginAttempts = JSON.parse(sessionStorage.getItem('_oa_attempts') || '{"count":0,"lockUntil":0}');
 
@@ -3882,8 +3836,6 @@ function initApp() {
   startAutoLock();
   initKeyboardShortcuts();
   setTimeout(checkDailyReminder, 800);
-  // إشعارات ذكية بعد 3 ثواني من الدخول
-  setTimeout(() => { if(Notification.permission === 'granted') checkSmartNotifications(); }, 3000);
 
   // تحميل سجل التعديلات من Firebase
   if(window.fbLoad) window.fbLoad('edit_log', EDIT_LOG_KEY).then(data => {
@@ -4678,7 +4630,6 @@ window.copyPayRef = copyPayRef;
 window.filterPayHistory = filterPayHistory;
 window.printReceipt = printReceipt;
 window.printLastReceipt = printLastReceipt;
-window.enableNotifications = enableNotifications;
 window.exportExcel = exportExcel;
 window.toggleAdvFilter = toggleAdvFilter;
 window.applyAdvFilter = applyAdvFilter;
