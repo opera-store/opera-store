@@ -6260,7 +6260,7 @@ async function _loadChatList() {
     // جيب آخر رسالة لكل عميل
     await Promise.all(allCusts.map(async c => {
       try {
-        const chatRef = collection(db, 'opera_store', 'chats', String(c.id));
+        const chatRef = collection(db, 'opera_chats_' + String(c.id));
         const snap = await getDocs(query(chatRef, orderBy('ts', 'desc')));
         if(!snap.empty) {
           const last = snap.docs[0].data();
@@ -6326,7 +6326,7 @@ window.openAdminConvo = function(custId) {
 
   // استمع للرسائل
   if(_adminConvoUnsub) _adminConvoUnsub();
-  const chatRef = collection(db, 'opera_store', 'chats', String(custId));
+  const chatRef = collection(db, 'opera_chats_' + String(custId));
   const q = query(chatRef, orderBy('ts'));
   _adminConvoUnsub = onSnapshotCol(q, snap => {
     const msgs = [];
@@ -6378,7 +6378,7 @@ window.adminSendMsg = async function() {
   input.value = '';
   input.style.height = 'auto';
   try {
-    await addDoc(collection(db, 'opera_store', 'chats', String(_adminActiveCust.id)), {
+    await addDoc(collection(db, 'opera_chats_' + String(_adminActiveCust.id)), {
       text,
       sender: 'admin',
       ts: Date.now(),
@@ -6429,7 +6429,7 @@ setTimeout(async () => {
     const allCusts = customers.filter(c => !c.archived);
     await Promise.all(allCusts.map(async c => {
       try {
-        const chatRef = collection(db, 'opera_store', 'chats', String(c.id));
+        const chatRef = collection(db, 'opera_chats_' + String(c.id));
         const snap = await getDocs(query(chatRef, where('sender','==','customer'), where('read','==',false)));
         totalUnread += snap.size;
       } catch(e) {}
