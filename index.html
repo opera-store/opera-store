@@ -584,6 +584,39 @@ select option { background:var(--surface2); }
 .yoy-up { background: rgba(52,211,153,0.15); color: var(--green); }
 .yoy-down { background: rgba(248,113,113,0.15); color: var(--red); }
 
+/* ===== CHAT ADMIN ===== */
+.chat-admin-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.chat-admin-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;position:relative}
+.chat-admin-item:hover{border-color:var(--border2);background:var(--surface3)}
+.chat-admin-item.has-unread{border-color:rgba(124,107,255,0.4);background:rgba(124,107,255,0.05)}
+.chat-admin-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff;flex-shrink:0;font-weight:800}
+.chat-admin-info{flex:1;min-width:0}
+.chat-admin-name{font-size:0.78rem;font-weight:800;margin-bottom:2px}
+.chat-admin-preview{font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-admin-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.chat-admin-time{font-size:0.52rem;color:var(--muted)}
+.chat-admin-unread{background:var(--accent);color:#fff;border-radius:10px;font-size:0.5rem;font-weight:900;padding:2px 6px;min-width:18px;text-align:center}
+/* Chat conversation in admin */
+.admin-chat-header{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:10px}
+.admin-chat-messages{height:calc(100vh - 280px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scroll-behavior:smooth}
+.admin-chat-messages::-webkit-scrollbar{width:3px}
+.admin-chat-messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.admin-msg-row{display:flex;flex-direction:column;max-width:78%}
+.admin-msg-row.mine{align-self:flex-end;align-items:flex-end}
+.admin-msg-row.theirs{align-self:flex-start;align-items:flex-start}
+.admin-msg-bubble{padding:9px 12px;border-radius:16px;font-size:0.78rem;line-height:1.55;word-break:break-word}
+.admin-msg-row.mine .admin-msg-bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:16px 16px 4px 16px}
+.admin-msg-row.theirs .admin-msg-bubble{background:var(--surface3);color:var(--text);border-radius:16px 16px 16px 4px;border:1px solid var(--border)}
+.admin-msg-time{font-size:0.5rem;color:var(--muted);margin-top:3px}
+.admin-chat-input-bar{display:flex;gap:8px;align-items:flex-end;padding:10px 0 0;border-top:1px solid var(--border);margin-top:8px}
+.admin-chat-input{flex:1;background:var(--surface3);border:1px solid var(--border);border-radius:20px;padding:10px 14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;resize:none;outline:none;max-height:100px;min-height:40px;line-height:1.4;transition:border-color 0.2s}
+.admin-chat-input:focus{border-color:var(--accent)}
+.admin-chat-send-btn{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s;box-shadow:0 4px 12px rgba(124,107,255,0.3);font-size:0.9rem}
+.admin-chat-send-btn:active{transform:scale(0.92)}
+.chat-date-sep-admin{text-align:center;font-size:0.55rem;color:var(--muted);margin:4px 0}
+/* Chat badge on menu button */
+.chat-menu-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:0.48rem;font-weight:900;padding:1px 4px;min-width:14px;text-align:center;display:none;font-family:'Cairo',sans-serif;border:2px solid var(--surface)}
+.chat-menu-badge.show{display:block}
 /* ===== EDIT LOG ===== */
 .edit-log-row {
   display: flex; align-items: flex-start; gap: 10px;
@@ -1054,6 +1087,10 @@ input, textarea, select { font-size: 0.88rem !important; }
 
     <!-- قسم: التواصل -->
     <div class="menu-section-label">💬 التواصل</div>
+    <button class="menu-btn" onclick="closeM('menu-modal');openAdminChat()" style="position:relative">
+      <i class="fa-regular fa-comments" style="color:var(--accent2)"></i> شات العملاء
+      <span class="chat-menu-badge" id="chat-menu-badge"></span>
+    </button>
     <button class="menu-btn" onclick="openCustomMsgs()"><i class="fa-solid fa-comment-dots" style="color:var(--green)"></i> رسائل مخصصة</button>
     <button class="menu-btn" id="menu-broadcast-btn" onclick="openBroadcast()"><i class="fa-solid fa-tower-broadcast" style="color:var(--pink)"></i> إشعار لكل العملاء</button>
 
@@ -2014,6 +2051,49 @@ input, textarea, select { font-size: 0.88rem !important; }
 </div>
 
 <!-- ===== EDIT LOG MODAL ===== -->
+<!-- ===== CHAT MODAL ===== -->
+<div class="modal-overlay" id="chat-modal">
+  <div class="modal-panel" id="chat-modal-panel">
+    <!-- شاشة قائمة المحادثات -->
+    <div id="chat-list-view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div class="modal-title" style="margin-bottom:2px">💬 رسائل العملاء</div>
+          <div style="font-size:0.6rem;color:var(--muted)" id="chat-list-subtitle">جاري التحميل...</div>
+        </div>
+        <div class="back-btn" onclick="closeM('chat-modal')">رجوع</div>
+      </div>
+      <div id="chat-admin-list-el" class="chat-admin-list"></div>
+      <div id="chat-list-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--muted)">
+        <i class="fa-regular fa-comments" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:10px"></i>
+        <div style="font-size:0.75rem">لا توجد محادثات بعد</div>
+      </div>
+    </div>
+    <!-- شاشة المحادثة المفتوحة -->
+    <div id="chat-convo-view" style="display:none;height:100%;display:flex;flex-direction:column">
+      <div class="admin-chat-header">
+        <button onclick="backToChatList()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:0.65rem;cursor:pointer">
+          <i class="fa-solid fa-arrow-right"></i> رجوع
+        </button>
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.85rem" id="chat-convo-avatar"></div>
+        <div>
+          <div style="font-size:0.82rem;font-weight:800" id="chat-convo-name"></div>
+          <div style="font-size:0.58rem;color:var(--muted)" id="chat-convo-prod"></div>
+        </div>
+      </div>
+      <div class="admin-chat-messages" id="admin-chat-messages"></div>
+      <div class="admin-chat-input-bar">
+        <textarea class="admin-chat-input" id="admin-chat-input" placeholder="اكتب ردك..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();adminSendMsg()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="admin-chat-send-btn" onclick="adminSendMsg()">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="edit-log-modal">
   <div class="modal-panel">
     <div class="back-btn" onclick="closeToMenu('edit-log-modal')">رجوع</div>
@@ -2032,7 +2112,7 @@ input, textarea, select { font-size: 0.88rem !important; }
 <!-- ===== Firebase SDK ===== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, getDocs, updateDoc, query, orderBy, where, onSnapshot as onSnapshotCol } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 const firebaseConfig = {
   apiKey: "AIzaSyCUi3kogTKbON6HyKNXmIrgtyAVoI9h0t0",
@@ -4564,14 +4644,14 @@ function exportDashboardWhatsApp() {
     }));
     return t;
   })();
-  const scoreData = calcHealthScore(activeCustomers, lateCustomers, collectionRate, totalDueNow, totalPortfolio);
+  const pulseData = calcHealthScore(activeCustomers, lateCustomers, collectionRate, totalDueNow, totalPortfolio);
 
   const d = now.getDate()+'/'+(now.getMonth()+1)+'/'+now.getFullYear();
   const txt = `━━━━━━━━━━━━━━━━━━━━━
 📊 تقرير التحليلات — OPERA STORE
 📅 ${d}
 ━━━━━━━━━━━━━━━━━━━━━
-🏥 صحة المحفظة: ${scoreData.score}/100 ${scoreData.grade}
+📊 نسبة التحصيل: ${collectionRate}% | متأخرون: ${lateCustomers.length}
 ━━━━━━━━━━━━━━━━━━━━━
 👥 إجمالي العملاء النشطين: ${totalContracts}
 🔴 المتأخرون: ${lateCustomers.length} عميل
@@ -4587,16 +4667,13 @@ function exportDashboardWhatsApp() {
 }
 
 function calcHealthScore(activeCustomers, lateCustomers, collectionRate, totalDueNow, totalPortfolio) {
-  let score = 100;
-  const latePct = activeCustomers.length > 0 ? (lateCustomers.length / activeCustomers.length) * 100 : 0;
-  const duePct  = totalPortfolio > 0 ? (totalDueNow / totalPortfolio) * 100 : 0;
-  score -= Math.min(30, latePct * 1.5);
-  score -= Math.min(30, duePct * 2);
-  score -= Math.max(0, (100 - collectionRate) * 0.4);
-  score = Math.max(0, Math.round(score));
-  let grade = score >= 80 ? '🟢 ممتاز' : score >= 60 ? '🟡 جيد' : score >= 40 ? '🟠 متوسط' : '🔴 ضعيف';
-  let color = score >= 80 ? 'var(--green)' : score >= 60 ? '#a3e635' : score >= 40 ? 'var(--orange)' : 'var(--red)';
-  return { score, grade, color };
+  // بطاقة نبض المحفظة — 4 مؤشرات
+  const latePct   = activeCustomers.length > 0 ? Math.round((lateCustomers.length / activeCustomers.length) * 100) : 0;
+  const growthColor = (g) => g >= 0 ? 'var(--green)' : 'var(--red)';
+  const collColor   = collectionRate >= 80 ? 'var(--green)' : collectionRate >= 50 ? 'var(--orange)' : 'var(--red)';
+  const lateColor   = latePct <= 10 ? 'var(--green)' : latePct <= 25 ? 'var(--orange)' : 'var(--red)';
+  const dueColor    = totalDueNow === 0 ? 'var(--green)' : totalDueNow < 10000 ? 'var(--orange)' : 'var(--red)';
+  return { latePct, collColor, lateColor, dueColor };
 }
 
 function buildDashboard(keepScroll) {
@@ -4634,19 +4711,21 @@ function buildDashboard(keepScroll) {
   }
   const maxCol = Math.max(...monthlyCollection, ...monthlyExpected, 1);
 
-  // ── Forecast 3 أشهر قادمة ──
+  // ── Forecast قابل للتوسيع ──
+  const forecastRange = window._forecastRange || 3;
   const forecastMonths = [];
-  for(let i=1;i<=3;i++) {
+  const histRate = monthlyExpected[5] > 0 ? monthlyCollection[5] / monthlyExpected[5] : 0.8;
+  for(let i=1;i<=forecastRange;i++) {
     const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
-    const label = months[d.getMonth()].slice(0,3);
+    const label = months[d.getMonth()].slice(0,3) + (d.getFullYear()!==now.getFullYear()?'\'' + String(d.getFullYear()).slice(2):'');
     const expected = activeCustomers.reduce((s,c)=>{
       const paid = c.payments.reduce((a,p)=>a+p.amount,0);
       const rem  = (c.total-c.down-(c.earlyDiscount||0)) - paid;
       return s + (rem > 0 ? c.monthly : 0);
     },0);
-    // تعديل الـ forecast بناءً على نسبة التحصيل التاريخية
-    const histRate = monthlyExpected[5] > 0 ? monthlyCollection[5] / monthlyExpected[5] : 0.8;
-    forecastMonths.push({ label, expected, adjusted: Math.round(expected * Math.min(histRate, 1)) });
+    // كل ما زادت الشهور، بتقل الدقة تدريجياً
+    const accuracyDecay = Math.max(0.6, 1 - (i-1)*0.04);
+    forecastMonths.push({ label, expected, adjusted: Math.round(expected * Math.min(histRate, 1) * accuracyDecay), isApprox: i > 6 });
   }
 
   // ── توزيع العملاء حسب الحالة ──
@@ -4708,23 +4787,24 @@ function buildDashboard(keepScroll) {
   // متوسط مدة العقود
   const avgMonths         = totalContracts > 0 ? Math.round(activeCustomers.reduce((s,c)=>s+(c.months||12),0)/totalContracts) : 0;
   // Health Score
-  const healthData        = calcHealthScore(activeCustomers, lateCustomers, collectionRate, totalDueNow, totalPortfolio);
+  const pulseData         = calcHealthScore(activeCustomers, lateCustomers, collectionRate, totalDueNow, totalPortfolio);
 
   // ── ربحية المحفظة ──
   const totalCashPrice    = customers.reduce((s,c)=>s+(c.sell||0),0);
   const totalInstTotal    = customers.reduce((s,c)=>s+(c.total||0),0);
   const totalProfit       = totalInstTotal - totalCashPrice;
   const profitRate        = totalCashPrice > 0 ? Math.round((totalProfit/totalCashPrice)*100) : 0;
-  // الربح الفعلي المحقق (من المدفوعات)
-  const realizedProfit = customers.reduce((s,c) => {
+  // تحليل العائد على مستوى العملاء
+  let returnProfit = 0, returnBreak = 0, returnCost = 0;
+  customers.forEach(c => {
     const paid = c.payments.reduce((a,p)=>a+p.amount,0);
-    const cashBase = c.sell || 0;
-    const rem = cashBase - c.down;
-    if(cashBase === 0) return s;
-    const profitPerUnit = (c.total||0) - cashBase;
-    const paidRatio = (c.total||0) > 0 ? paid / (c.total - c.down) : 0;
-    return s + Math.max(0, profitPerUnit * paidRatio);
-  },0);
+    const cashBase = (c.sell||0) - (c.down||0);
+    if(cashBase <= 0) { returnProfit++; return; }
+    if(paid >= (c.total||0) - (c.down||0)) returnProfit++;
+    else if(paid >= cashBase) returnBreak++;
+    else returnCost++;
+  });
+  const returnTotal = returnProfit + returnBreak + returnCost || 1;
   // ربحية حسب المنتج
   const prodProfitMap = {};
   customers.forEach(c => {
@@ -4792,36 +4872,37 @@ function buildDashboard(keepScroll) {
       </button>
     </div>
 
-    <!-- ═══ Health Score ═══ -->
-    <div class="chart-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--surface),rgba(124,107,255,0.06))">
-      <div class="chart-title">🏥 مؤشر صحة المحفظة</div>
-      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
-        <div class="health-score-ring">
-          <svg width="80" height="80" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="33" fill="none" stroke="var(--surface3)" stroke-width="9"/>
-            <circle cx="40" cy="40" r="33" fill="none" stroke="${healthData.color}" stroke-width="9"
-              stroke-dasharray="${Math.round((healthData.score/100)*207.3)} 207.3"
-              stroke-dashoffset="51.8"
-              stroke-linecap="round"
-              transform="rotate(-90 40 40)"
-              style="transition:stroke-dasharray 0.8s ease"/>
-            <text x="40" y="36" text-anchor="middle" font-family="Cairo,sans-serif" font-weight="900" font-size="16" fill="${healthData.color}">${healthData.score}</text>
-            <text x="40" y="50" text-anchor="middle" font-family="Cairo,sans-serif" font-size="7" fill="var(--muted)">من 100</text>
-          </svg>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:1rem;font-weight:900;color:${healthData.color};margin-bottom:6px">${healthData.grade}</div>
-          <div style="display:flex;flex-direction:column;gap:5px">
-            ${[
-              {lbl:'نسبة التحصيل', val:collectionRate+'%', color: collectionRate>=80?'var(--green)':collectionRate>=50?'var(--orange)':'var(--red)'},
-              {lbl:'المتأخرون', val:lateCustomers.length+' / '+totalContracts, color: lateCustomers.length===0?'var(--green)':'var(--red)'},
-              {lbl:'نسبة الخطر', val:riskRate+'%', color: riskRate<=5?'var(--green)':riskRate<=15?'var(--orange)':'var(--red)'},
-              {lbl:'ديون +60 يوم', val:badDebtRisk+'%', color: badDebtRisk===0?'var(--green)':badDebtRisk<=5?'var(--orange)':'var(--red)'},
-            ].map(x=>`<div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:0.58rem;color:var(--muted)">${x.lbl}</span>
-              <span style="font-size:0.65rem;font-weight:800;color:${x.color}">${x.val}</span>
-            </div>`).join('')}
+    <!-- ═══ بطاقة نبض المحفظة ═══ -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:8px">💓 نبض المحفظة</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:4px">نسبة التحصيل</div>
+          <div style="font-size:1.3rem;font-weight:900;color:${pulseData.collColor}">${collectionRate}%</div>
+          <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:5px">
+            <div style="height:100%;width:${collectionRate}%;background:${pulseData.collColor};border-radius:3px"></div>
           </div>
+          <div style="font-size:0.5rem;color:var(--muted);margin-top:3px">${collectionRate>=80?'ممتاز 🟢':collectionRate>=50?'متوسط 🟠':'يحتاج متابعة 🔴'}</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:4px">نسبة المتأخرين</div>
+          <div style="font-size:1.3rem;font-weight:900;color:${pulseData.lateColor}">${pulseData.latePct}%</div>
+          <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:5px">
+            <div style="height:100%;width:${pulseData.latePct}%;background:${pulseData.lateColor};border-radius:3px"></div>
+          </div>
+          <div style="font-size:0.5rem;color:var(--muted);margin-top:3px">${lateCustomers.length} عميل من ${totalContracts}</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:4px">إجمالي المتأخرات</div>
+          <div style="font-size:${totalDueNow>999999?'0.8':'1.1'}rem;font-weight:900;color:${pulseData.dueColor}">${fmt(totalDueNow)}</div>
+          <div style="font-size:0.5rem;color:var(--muted);margin-top:3px">جنيه مصري</div>
+          <div style="font-size:0.5rem;color:${pulseData.dueColor};margin-top:2px;font-weight:700">${totalDueNow===0?'لا متأخرات 🟢':totalDueNow<10000?'منخفض 🟠':'مرتفع 🔴'}</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:4px">نمو هذا الشهر</div>
+          <div style="font-size:1.3rem;font-weight:900;color:${growthPct>=0?'var(--green)':'var(--red)'}">${growthPct>=0?'▲':'▼'}${Math.abs(growthPct)}%</div>
+          <div style="font-size:0.5rem;color:var(--muted);margin-top:3px">مقارنة بالشهر السابق</div>
+          <div style="font-size:0.5rem;color:${growthPct>=0?'var(--green)':'var(--red)'};margin-top:2px;font-weight:700">${growthPct>=0?'أداء أفضل 🟢':'أداء أقل 🔴'}</div>
         </div>
       </div>
     </div>
@@ -4868,26 +4949,47 @@ function buildDashboard(keepScroll) {
       <div style="display:flex;gap:12px;justify-content:center;margin-top:6px;font-size:0.55rem;color:var(--muted)">
         <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:2px;margin-left:3px"></span>محصّل</span>
         <span><span style="display:inline-block;width:8px;height:8px;background:rgba(52,211,153,0.4);border-radius:2px;border:1px dashed rgba(52,211,153,0.8);margin-left:3px"></span>متوقع</span>
-        <span><span style="display:inline-block;width:8px;height:3px;background:rgba(96,165,250,0.6);border-radius:2px;margin-left:3px;margin-bottom:1px"></span>السنة السابقة</span>
       </div>
+      <!-- جدول مقارنة YoY -->
+      ${monthlyLastYear.some(v=>v>0) ? `
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:6px;text-align:center">📊 مقارنة بنفس الشهر السنة الماضية</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;text-align:center">
+          ${monthLabels.map((lbl,i) => {
+            const curr = monthlyCollection[i];
+            const prev = monthlyLastYear[i];
+            const diff = prev > 0 ? Math.round(((curr-prev)/prev)*100) : null;
+            return `<div style="background:var(--surface2);border-radius:4px;padding:4px 2px">
+              <div style="font-size:0.5rem;color:var(--muted)">${lbl}</div>
+              <div style="font-size:0.55rem;font-weight:700;color:var(--text)">${fmt(curr/1000).replace(',','.')}k</div>
+              ${diff !== null ? `<div style="font-size:0.5rem;font-weight:800;color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'▲':'▼'}${Math.abs(diff)}%</div>` : `<div style="font-size:0.5rem;color:var(--muted)">—</div>`}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
     </div>
 
     <!-- ═══ Forecast التحصيل القادم ═══ -->
     <div class="chart-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--surface),rgba(52,211,153,0.04))">
-      <div class="chart-title">🔮 توقعات التحصيل — الأشهر القادمة</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="chart-title" style="margin-bottom:0">🔮 توقعات التحصيل</div>
+        <div style="display:flex;gap:4px">
+          ${[3,6,12].map(n=>`<button onclick="window._forecastRange=${n};buildDashboard(true)" style="padding:3px 8px;border-radius:12px;border:1px solid ${(window._forecastRange||3)===n?'var(--accent)':'var(--border)'};background:${(window._forecastRange||3)===n?'var(--accent)':'var(--surface3)'};color:${(window._forecastRange||3)===n?'#fff':'var(--muted)'};font-family:Cairo,sans-serif;font-size:0.55rem;font-weight:700;cursor:pointer">${n} شهر</button>`).join('')}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(${Math.min(forecastMonths.length,6)},1fr);gap:5px">
         ${forecastMonths.map((m,i) => `
-          <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px;text-align:center">
-            <div style="font-size:0.62rem;color:var(--muted);margin-bottom:4px">${m.label}</div>
-            <div style="font-size:0.9rem;font-weight:800;color:var(--green)">${fmt(m.adjusted)}</div>
-            <div style="font-size:0.5rem;color:var(--muted);margin-top:2px">متوقع: ${fmt(m.expected)}</div>
-            <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:6px">
-              <div style="height:100%;width:${m.expected>0?Math.round((m.adjusted/m.expected)*100):0}%;background:${['var(--green)','var(--accent2)','var(--blue)'][i]};border-radius:3px"></div>
+          <div style="background:${m.isApprox?'rgba(251,146,60,0.06)':'var(--surface2)'};border:1px solid ${m.isApprox?'rgba(251,146,60,0.2)':'var(--border2)'};border-radius:var(--radius);padding:7px;text-align:center">
+            <div style="font-size:0.5rem;color:var(--muted);margin-bottom:3px">${m.label}</div>
+            <div style="font-size:0.75rem;font-weight:800;color:${m.isApprox?'var(--orange)':'var(--green)'}">${fmt(m.adjusted)}</div>
+            <div style="height:3px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:4px">
+              <div style="height:100%;width:${m.expected>0?Math.round((m.adjusted/m.expected)*100):0}%;background:${m.isApprox?'var(--orange)':'var(--green)'};border-radius:3px"></div>
             </div>
+            ${m.isApprox?`<div style="font-size:0.4rem;color:var(--orange);margin-top:2px">تقريبي</div>`:''}
           </div>`).join('')}
       </div>
-      <div style="font-size:0.55rem;color:var(--muted);text-align:center;margin-top:8px">
-        <i class="fa-solid fa-circle-info"></i> التوقع مبني على معدل التحصيل التاريخي
+      <div style="font-size:0.52rem;color:var(--muted);text-align:center;margin-top:8px">
+        <i class="fa-solid fa-circle-info"></i> مبني على معدل التحصيل التاريخي · أكتر من 6 شهور تقريبي ⚠️
       </div>
     </div>
 
@@ -4908,15 +5010,29 @@ function buildDashboard(keepScroll) {
         </div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">💰 الربحية</div>
-        <div style="text-align:center;padding:4px 0">
-          <div style="font-size:0.52rem;color:var(--muted)">الربح المتوقع الكلي</div>
-          <div style="font-size:1rem;font-weight:900;color:var(--green);margin:2px 0">${fmt(totalProfit)}</div>
-          <div style="font-size:0.52rem;color:var(--muted);margin-bottom:4px">محقق فعلاً: <b style="color:var(--accent2)">${fmt(Math.round(realizedProfit))}</b></div>
-          <div style="height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-bottom:6px">
-            <div style="height:100%;width:${Math.min(profitRate,100)}%;background:linear-gradient(90deg,var(--green),var(--accent2));border-radius:4px"></div>
+        <div class="chart-title">💰 العائد على العملاء</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:0.6rem;font-weight:700;color:var(--green)">✅ في منطقة الربح</div>
+              <div style="font-size:0.5rem;color:var(--muted)">دفعوا أكتر من التمن كاش</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--green)">${returnProfit}</div>
           </div>
-          <div style="font-size:0.5rem;color:var(--muted)">هامش: <b style="color:var(--accent2)">${profitRate}%</b></div>
+          <div style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:0.6rem;font-weight:700;color:var(--orange)">⚖️ في منطقة التعادل</div>
+              <div style="font-size:0.5rem;color:var(--muted)">غطوا التكلفة بس</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--orange)">${returnBreak}</div>
+          </div>
+          <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:0.6rem;font-weight:700;color:var(--red)">🔴 لسه في التكلفة</div>
+              <div style="font-size:0.5rem;color:var(--muted)">محتاجين متابعة</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--red)">${returnCost}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -6113,6 +6229,219 @@ function icSaveSettings() {
   showToast('✅ تم حفظ النسب', 'success', 'fa-check');
   closeM('ic-settings-modal');
 }
+
+// ═══════════════════════════════════════════════
+// ════════════ ADMIN CHAT ENGINE ════════════════
+// ═══════════════════════════════════════════════
+let _adminChatUnsubs  = {}; // unsub per custId for list
+let _adminConvoUnsub  = null;
+let _adminActiveCust  = null; // { id, name, prod }
+
+// ── فتح شاشة الشات ──
+window.openAdminChat = function() {
+  document.getElementById('chat-list-view').style.display  = 'block';
+  document.getElementById('chat-convo-view').style.display = 'none';
+  openM('chat-modal');
+  _loadChatList();
+};
+
+// ── تحميل قائمة المحادثات ──
+async function _loadChatList() {
+  const subtitle = document.getElementById('chat-list-subtitle');
+  const listEl   = document.getElementById('chat-admin-list-el');
+  const emptyEl  = document.getElementById('chat-list-empty');
+  if(subtitle) subtitle.textContent = 'جاري التحميل...';
+
+  // جيب كل العملاء عندهم محادثات
+  try {
+    const allCusts = customers.filter(c => !c.archived);
+    const convos = [];
+
+    // جيب آخر رسالة لكل عميل
+    await Promise.all(allCusts.map(async c => {
+      try {
+        const chatRef = collection(db, 'opera_store', 'chats', String(c.id));
+        const snap = await getDocs(query(chatRef, orderBy('ts', 'desc')));
+        if(!snap.empty) {
+          const last = snap.docs[0].data();
+          const unread = snap.docs.filter(d => d.data().sender === 'customer' && !d.data().read).length;
+          convos.push({ cust: c, last, unread, total: snap.size });
+        }
+      } catch(e) {}
+    }));
+
+    // ترتيب حسب آخر رسالة
+    convos.sort((a,b) => (b.last.ts||0) - (a.last.ts||0));
+
+    if(subtitle) subtitle.textContent = convos.length + ' محادثة';
+
+    if(convos.length === 0) {
+      if(listEl) listEl.innerHTML = '';
+      if(emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = 'none';
+
+    // رسم القائمة
+    const totalUnread = convos.reduce((s,c) => s + c.unread, 0);
+    _updateChatMenuBadge(totalUnread);
+
+    listEl.innerHTML = convos.map(({cust, last, unread}) => {
+      const time = last.ts ? _fmtChatTime(last.ts) : '';
+      const preview = last.text ? last.text.slice(0,40) + (last.text.length>40?'...':'') : '';
+      const initials = cust.name ? cust.name.split(' ').map(w=>w[0]).join('').slice(0,2) : '؟';
+      return `<div class="chat-admin-item ${unread>0?'has-unread':''}" onclick="openAdminConvo(${cust.id})">
+        <div class="chat-admin-avatar">${initials}</div>
+        <div class="chat-admin-info">
+          <div class="chat-admin-name">${cust.name} ${unread>0?`<span style="font-size:0.5rem;background:var(--accent);color:#fff;border-radius:8px;padding:1px 5px;margin-right:4px">جديد</span>`:''}</div>
+          <div class="chat-admin-preview">${last.sender==='admin'?'أنت: ':''} ${preview}</div>
+        </div>
+        <div class="chat-admin-meta">
+          <div class="chat-admin-time">${time}</div>
+          ${unread>0?`<div class="chat-admin-unread">${unread}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('chat list error', e);
+    if(subtitle) subtitle.textContent = 'خطأ في التحميل';
+  }
+}
+
+// ── فتح محادثة عميل ──
+window.openAdminConvo = function(custId) {
+  const c = customers.find(x => x.id === custId);
+  if(!c) return;
+  _adminActiveCust = { id: custId, name: c.name, prod: c.prod || '' };
+
+  // تحديث الهيدر
+  const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  document.getElementById('chat-convo-avatar').textContent = initials;
+  document.getElementById('chat-convo-name').textContent   = c.name;
+  document.getElementById('chat-convo-prod').textContent   = c.prod || '';
+
+  // إخفاء القائمة وإظهار المحادثة
+  document.getElementById('chat-list-view').style.display  = 'none';
+  document.getElementById('chat-convo-view').style.display = 'flex';
+
+  // استمع للرسائل
+  if(_adminConvoUnsub) _adminConvoUnsub();
+  const chatRef = collection(db, 'opera_store', 'chats', String(custId));
+  const q = query(chatRef, orderBy('ts'));
+  _adminConvoUnsub = onSnapshotCol(q, snap => {
+    const msgs = [];
+    snap.forEach(d => msgs.push({id: d.id, ...d.data()}));
+    _renderAdminConvo(msgs);
+    // mark customer messages as read
+    snap.docs.forEach(d => {
+      if(d.data().sender === 'customer' && !d.data().read) {
+        updateDoc(d.ref, {read: true}).catch(()=>{});
+      }
+    });
+    _updateChatMenuBadge(0); // reset badge للمحادثة دي
+  });
+};
+
+function _renderAdminConvo(msgs) {
+  const el = document.getElementById('admin-chat-messages');
+  if(!el) return;
+  if(msgs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.75rem;padding:20px">لا توجد رسائل بعد</div>';
+    return;
+  }
+  let html = '';
+  let lastDate = '';
+  msgs.forEach(m => {
+    const d  = m.ts ? new Date(m.ts) : new Date();
+    const ds = d.toLocaleDateString('ar-EG',{day:'numeric',month:'long'});
+    if(ds !== lastDate) {
+      html += `<div class="chat-date-sep-admin" style="text-align:center;font-size:0.55rem;color:var(--muted);margin:4px 0">${ds}</div>`;
+      lastDate = ds;
+    }
+    const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    const mine = m.sender === 'admin';
+    html += `<div class="admin-msg-row ${mine?'mine':'theirs'}">
+      <div class="admin-msg-bubble">${m.text.replace(/\n/g,'<br>')}</div>
+      <div class="admin-msg-time">${time}${mine?(m.read?' ✓✓':' ✓'):''}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
+}
+
+// ── رسالة رد من الأدمن ──
+window.adminSendMsg = async function() {
+  if(!_adminActiveCust) return;
+  const input = document.getElementById('admin-chat-input');
+  const text  = input?.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  try {
+    await addDoc(collection(db, 'opera_store', 'chats', String(_adminActiveCust.id)), {
+      text,
+      sender: 'admin',
+      ts: Date.now(),
+      read: false,
+    });
+  } catch(e) {
+    console.error('admin send error', e);
+    showToast('خطأ في الإرسال', 'error', 'fa-exclamation');
+  }
+};
+
+// ── رجوع للقائمة ──
+window.backToChatList = function() {
+  if(_adminConvoUnsub) { _adminConvoUnsub(); _adminConvoUnsub = null; }
+  _adminActiveCust = null;
+  document.getElementById('chat-list-view').style.display  = 'block';
+  document.getElementById('chat-convo-view').style.display = 'none';
+  _loadChatList();
+};
+
+// ── تحديث badge القائمة ──
+function _updateChatMenuBadge(count) {
+  const badge = document.getElementById('chat-menu-badge');
+  if(!badge) return;
+  if(count > 0) {
+    badge.textContent = count > 9 ? '9+' : count;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+// ── فورمات الوقت ──
+function _fmtChatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  if(diff < 60000) return 'الآن';
+  if(diff < 3600000) return Math.round(diff/60000) + ' د';
+  if(diff < 86400000) return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+}
+
+// ── تحميل badge عند فتح التطبيق ──
+setTimeout(async () => {
+  try {
+    let totalUnread = 0;
+    const allCusts = customers.filter(c => !c.archived);
+    await Promise.all(allCusts.map(async c => {
+      try {
+        const chatRef = collection(db, 'opera_store', 'chats', String(c.id));
+        const snap = await getDocs(query(chatRef, where('sender','==','customer'), where('read','==',false)));
+        totalUnread += snap.size;
+      } catch(e) {}
+    }));
+    _updateChatMenuBadge(totalUnread);
+  } catch(e) {}
+}, 3000);
+
+window.openAdminChat   = window.openAdminChat;
+window.openAdminConvo  = window.openAdminConvo;
+window.adminSendMsg    = window.adminSendMsg;
+window.backToChatList  = window.backToChatList;
 </script>
 </body>
 </html>
