@@ -598,7 +598,7 @@ select option { background:var(--surface2); }
 .chat-admin-unread{background:var(--accent);color:#fff;border-radius:10px;font-size:0.5rem;font-weight:900;padding:2px 6px;min-width:18px;text-align:center}
 /* Chat conversation in admin */
 .admin-chat-header{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:10px}
-.admin-chat-messages{height:calc(100vh - 280px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scroll-behavior:smooth}
+.admin-chat-messages{height:calc(100vh - 280px);overflow-y:auto;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;padding:4px 0;scroll-behavior:smooth}
 .admin-chat-messages::-webkit-scrollbar{width:3px}
 .admin-chat-messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 .admin-msg-row{display:flex;flex-direction:column;max-width:78%}
@@ -2312,6 +2312,269 @@ window._ref = ref;
 window._uploadBytesResumable = uploadBytesResumable;
 window._getDownloadURL = getDownloadURL;
 window._deleteObject = deleteObject;
+
+
+// ═══════════════════════════════════════════════
+// ════════════ ADMIN CHAT ENGINE ════════════════
+// ═══════════════════════════════════════════════
+let _adminChatUnsubs  = {}; // unsub per custId for list
+let _adminConvoUnsub  = null;
+let _adminActiveCust  = null; // { id, name, prod }
+
+// ── فتح شاشة الشات ──
+window.openAdminChat = function() {
+  document.getElementById('chat-list-view').style.display  = 'block';
+  document.getElementById('chat-convo-view').style.display = 'none';
+  openM('chat-modal');
+  if(window._chatListInterval) clearInterval(window._chatListInterval);
+  window.startChatListListener();
+};
+
+// ── تحميل قائمة المحادثات ──
+async function _loadChatList() {
+  const subtitle = document.getElementById('chat-list-subtitle');
+  const listEl   = document.getElementById('chat-admin-list-el');
+  const emptyEl  = document.getElementById('chat-list-empty');
+  if(subtitle) subtitle.textContent = 'جاري التحميل...';
+
+  try {
+    const allCusts = customers.filter(c => !c.archived);
+    const convos = [];
+
+    await Promise.all(allCusts.map(async c => {
+      try {
+        const custIdStr = String(c.id);
+        const chatRef = collection(db, 'operaChats', custIdStr, 'msgs');
+        const snap = await getDocs(query(chatRef, orderBy('ts', 'desc')));
+        if(!snap.empty) {
+          const last = snap.docs[0].data();
+          const unread = snap.docs.filter(d => d.data().sender === 'customer' && !d.data().read).length;
+          convos.push({ cust: c, last, unread, total: snap.size });
+        }
+      } catch(e) {
+        console.warn('error loading chat for', c.id, e.message);
+      }
+    }));
+
+    // ترتيب حسب آخر رسالة
+    convos.sort((a,b) => (b.last.ts||0) - (a.last.ts||0));
+
+    if(subtitle) subtitle.textContent = convos.length + ' محادثة';
+
+    if(convos.length === 0) {
+      if(listEl) listEl.innerHTML = '';
+      if(emptyEl) {
+        emptyEl.style.display = 'block';
+        emptyEl.innerHTML = `<i class="fa-regular fa-comments" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:10px"></i>
+          <div style="font-size:0.75rem">لا توجد محادثات بعد</div>
+          <button onclick="_loadChatList()" style="margin-top:12px;padding:6px 16px;background:var(--surface3);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:0.65rem;cursor:pointer">🔄 تحديث</button>`;
+      }
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = 'none';
+
+    // رسم القائمة
+    const totalUnread = convos.reduce((s,c) => s + c.unread, 0);
+    _updateChatMenuBadge(totalUnread);
+
+    listEl.innerHTML = convos.map(({cust, last, unread}) => {
+      const time = last.ts ? _fmtChatTime(last.ts) : '';
+      const preview = last.text ? last.text.slice(0,40) + (last.text.length>40?'...':'') : '';
+      const initials = cust.name ? cust.name.split(' ').map(w=>w[0]).join('').slice(0,2) : '؟';
+      return `<div class="chat-admin-item ${unread>0?'has-unread':''}" onclick="openAdminConvo(${cust.id})">
+        <div class="chat-admin-avatar">${initials}</div>
+        <div class="chat-admin-info">
+          <div class="chat-admin-name">${cust.name} ${unread>0?`<span style="font-size:0.5rem;background:var(--accent);color:#fff;border-radius:8px;padding:1px 5px;margin-right:4px">جديد</span>`:''}</div>
+          <div class="chat-admin-preview">${last.sender==='admin'?'أنت: ':''} ${preview}</div>
+        </div>
+        <div class="chat-admin-meta">
+          <div class="chat-admin-time">${time}</div>
+          ${unread>0?`<div class="chat-admin-unread">${unread}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('chat list error', e);
+    if(subtitle) subtitle.textContent = 'خطأ في التحميل';
+  }
+}
+
+// ── realtime listener للقائمة ──
+let _chatListUnsubs = [];
+window.startChatListListener = function() {
+  // كل 30 ثانية يحدث القائمة
+  _loadChatList();
+  const interval = setInterval(() => {
+    const modal = document.getElementById('chat-modal');
+    const listView = document.getElementById('chat-list-view');
+    if(modal && modal.classList.contains('active') && listView && listView.style.display !== 'none') {
+      _loadChatList();
+    }
+  }, 15000);
+  window._chatListInterval = interval;
+};
+
+// ── فتح محادثة عميل ──
+window.openAdminConvo = function(custId) {
+  const c = customers.find(x => String(x.id) === String(custId));
+  if(!c) return;
+  _adminActiveCust = { id: custId, name: c.name, prod: c.prod || '' };
+
+  // تحديث الهيدر
+  const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  document.getElementById('chat-convo-avatar').textContent = initials;
+  document.getElementById('chat-convo-name').textContent   = c.name;
+  document.getElementById('chat-convo-prod').textContent   = c.prod || '';
+
+  // إخفاء القائمة وإظهار المحادثة
+  document.getElementById('chat-list-view').style.display  = 'none';
+  document.getElementById('chat-convo-view').style.display = 'flex';
+
+  // استمع للرسائل
+  if(_adminConvoUnsub) _adminConvoUnsub();
+  const chatRef = collection(db, 'operaChats', String(custId), 'msgs');
+  const q = query(chatRef, orderBy('ts'));
+  _adminConvoUnsub = onSnapshotCol(q, snap => {
+    const msgs = [];
+    snap.forEach(d => msgs.push({id: d.id, ...d.data()}));
+    _renderAdminConvo(msgs);
+    // mark customer messages as read
+    snap.docs.forEach(d => {
+      if(d.data().sender === 'customer' && !d.data().read) {
+        updateDoc(d.ref, {read: true}).catch(()=>{});
+      }
+    });
+    _updateChatMenuBadge(0); // reset badge للمحادثة دي
+  });
+};
+
+function _renderAdminConvo(msgs) {
+  const el = document.getElementById('admin-chat-messages');
+  if(!el) return;
+  if(msgs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.75rem;padding:20px">لا توجد رسائل بعد</div>';
+    return;
+  }
+  let html = '';
+  let lastDate = '';
+  msgs.forEach(m => {
+    const d  = m.ts ? new Date(m.ts) : new Date();
+    const ds = d.toLocaleDateString('ar-EG',{day:'numeric',month:'long'});
+    if(ds !== lastDate) {
+      html += `<div class="chat-date-sep-admin" style="text-align:center;font-size:0.55rem;color:var(--muted);margin:4px 0">${ds}</div>`;
+      lastDate = ds;
+    }
+    const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    const mine = m.sender === 'admin';
+    html += `<div class="admin-msg-row ${mine?'mine':'theirs'}">
+      <div class="admin-msg-bubble">${m.text.replace(/\n/g,'<br>')}</div>
+      <div class="admin-msg-time">${time}${mine?(m.read?' ✓✓':' ✓'):''}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
+}
+
+// ── رسالة رد من الأدمن ──
+window.adminSendMsg = async function() {
+  if(!_adminActiveCust) return;
+  const input = document.getElementById('admin-chat-input');
+  const text  = input?.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  try {
+    await addDoc(collection(db, 'operaChats', String(_adminActiveCust.id), 'msgs'), {
+      text,
+      sender: 'admin',
+      ts: Date.now(),
+      read: false,
+    });
+  } catch(e) {
+    console.error('admin send error', e);
+    showToast('خطأ في الإرسال', 'error', 'fa-exclamation');
+  }
+};
+
+// ── رجوع للقائمة ──
+window.backToChatList = function() {
+  if(_adminConvoUnsub) { _adminConvoUnsub(); _adminConvoUnsub = null; }
+  _adminActiveCust = null;
+  document.getElementById('chat-list-view').style.display  = 'block';
+  document.getElementById('chat-convo-view').style.display = 'none';
+  _loadChatList();
+};
+
+// ── تحديث badge القائمة ──
+function _updateChatMenuBadge(count) {
+  const badge = document.getElementById('chat-menu-badge');
+  if(!badge) return;
+  if(count > 0) {
+    badge.textContent = count > 9 ? '9+' : count;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+// ── فورمات الوقت ──
+function _fmtChatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  if(diff < 60000) return 'الآن';
+  if(diff < 3600000) return Math.round(diff/60000) + ' د';
+  if(diff < 86400000) return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+}
+
+// ── تحميل badge عند فتح التطبيق ──
+setTimeout(async () => {
+  try {
+    let totalUnread = 0;
+    const allCusts = customers.filter(c => !c.archived);
+    await Promise.all(allCusts.map(async c => {
+      try {
+        const chatRef = collection(db, 'operaChats', String(c.id), 'msgs');
+        const snap = await getDocs(query(chatRef, where('sender','==','customer'), where('read','==',false)));
+        totalUnread += snap.size;
+      } catch(e) {}
+    }));
+    _updateChatMenuBadge(totalUnread);
+  } catch(e) {}
+}, 3000);
+
+window._loadChatList   = _loadChatList;
+
+// ── تنظيف الرسائل القديمة (أكتر من 90 يوم) ──
+async function _cleanOldMessages() {
+  const cutoff = Date.now() - (90 * 24 * 60 * 60 * 1000); // 90 يوم
+  const lastClean = parseInt(localStorage.getItem('chat_last_clean') || '0');
+  // شغّل مرة واحدة كل 24 ساعة بس
+  if(Date.now() - lastClean < 24 * 60 * 60 * 1000) return;
+  localStorage.setItem('chat_last_clean', Date.now().toString());
+  try {
+    const allCusts = customers.filter(c => !c.archived);
+    let deleted = 0;
+    for(const c of allCusts) {
+      try {
+        const chatRef = collection(db, 'operaChats', String(c.id), 'msgs');
+        const snap = await getDocs(query(chatRef, where('ts', '<', cutoff)));
+        for(const d of snap.docs) {
+          await d.ref.delete().catch(()=>{});
+          deleted++;
+        }
+      } catch(e) {}
+    }
+    if(deleted > 0) console.log(`تم حذف ${deleted} رسالة قديمة`);
+  } catch(e) {}
+}
+// شغّل التنظيف بعد 10 ثواني من فتح التطبيق
+setTimeout(_cleanOldMessages, 10000);
+window.openAdminChat   = window.openAdminChat;
+window.openAdminConvo  = window.openAdminConvo;
+window.adminSendMsg    = window.adminSendMsg;
+window.backToChatList  = window.backToChatList;
 </script>
 
 <script>
@@ -6236,240 +6499,7 @@ function icSaveSettings() {
   closeM('ic-settings-modal');
 }
 
-// ═══════════════════════════════════════════════
-// ════════════ ADMIN CHAT ENGINE ════════════════
-// ═══════════════════════════════════════════════
-let _adminChatUnsubs  = {}; // unsub per custId for list
-let _adminConvoUnsub  = null;
-let _adminActiveCust  = null; // { id, name, prod }
 
-// ── فتح شاشة الشات ──
-window.openAdminChat = function() {
-  document.getElementById('chat-list-view').style.display  = 'block';
-  document.getElementById('chat-convo-view').style.display = 'none';
-  openM('chat-modal');
-  if(window._chatListInterval) clearInterval(window._chatListInterval);
-  window.startChatListListener();
-};
-
-// ── تحميل قائمة المحادثات ──
-async function _loadChatList() {
-  const subtitle = document.getElementById('chat-list-subtitle');
-  const listEl   = document.getElementById('chat-admin-list-el');
-  const emptyEl  = document.getElementById('chat-list-empty');
-  if(subtitle) subtitle.textContent = 'جاري التحميل...';
-
-  try {
-    const allCusts = customers.filter(c => !c.archived);
-    const convos = [];
-
-    await Promise.all(allCusts.map(async c => {
-      try {
-        const custIdStr = String(c.id);
-        const chatRef = collection(db, 'operaChats', custIdStr, 'msgs');
-        const snap = await getDocs(query(chatRef, orderBy('ts', 'desc')));
-        if(!snap.empty) {
-          const last = snap.docs[0].data();
-          const unread = snap.docs.filter(d => d.data().sender === 'customer' && !d.data().read).length;
-          convos.push({ cust: c, last, unread, total: snap.size });
-        }
-      } catch(e) {
-        console.warn('error loading chat for', c.id, e.message);
-      }
-    }));
-
-    // ترتيب حسب آخر رسالة
-    convos.sort((a,b) => (b.last.ts||0) - (a.last.ts||0));
-
-    if(subtitle) subtitle.textContent = convos.length + ' محادثة';
-
-    if(convos.length === 0) {
-      if(listEl) listEl.innerHTML = '';
-      if(emptyEl) {
-        emptyEl.style.display = 'block';
-        emptyEl.innerHTML = `<i class="fa-regular fa-comments" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:10px"></i>
-          <div style="font-size:0.75rem">لا توجد محادثات بعد</div>
-          <button onclick="_loadChatList()" style="margin-top:12px;padding:6px 16px;background:var(--surface3);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:0.65rem;cursor:pointer">🔄 تحديث</button>`;
-      }
-      return;
-    }
-    if(emptyEl) emptyEl.style.display = 'none';
-
-    // رسم القائمة
-    const totalUnread = convos.reduce((s,c) => s + c.unread, 0);
-    _updateChatMenuBadge(totalUnread);
-
-    listEl.innerHTML = convos.map(({cust, last, unread}) => {
-      const time = last.ts ? _fmtChatTime(last.ts) : '';
-      const preview = last.text ? last.text.slice(0,40) + (last.text.length>40?'...':'') : '';
-      const initials = cust.name ? cust.name.split(' ').map(w=>w[0]).join('').slice(0,2) : '؟';
-      return `<div class="chat-admin-item ${unread>0?'has-unread':''}" onclick="openAdminConvo(${cust.id})">
-        <div class="chat-admin-avatar">${initials}</div>
-        <div class="chat-admin-info">
-          <div class="chat-admin-name">${cust.name} ${unread>0?`<span style="font-size:0.5rem;background:var(--accent);color:#fff;border-radius:8px;padding:1px 5px;margin-right:4px">جديد</span>`:''}</div>
-          <div class="chat-admin-preview">${last.sender==='admin'?'أنت: ':''} ${preview}</div>
-        </div>
-        <div class="chat-admin-meta">
-          <div class="chat-admin-time">${time}</div>
-          ${unread>0?`<div class="chat-admin-unread">${unread}</div>`:''}
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    console.error('chat list error', e);
-    if(subtitle) subtitle.textContent = 'خطأ في التحميل';
-  }
-}
-
-// ── realtime listener للقائمة ──
-let _chatListUnsubs = [];
-window.startChatListListener = function() {
-  // كل 30 ثانية يحدث القائمة
-  _loadChatList();
-  const interval = setInterval(() => {
-    const modal = document.getElementById('chat-modal');
-    const listView = document.getElementById('chat-list-view');
-    if(modal && modal.classList.contains('active') && listView && listView.style.display !== 'none') {
-      _loadChatList();
-    }
-  }, 15000);
-  window._chatListInterval = interval;
-};
-
-// ── فتح محادثة عميل ──
-window.openAdminConvo = function(custId) {
-  const c = customers.find(x => String(x.id) === String(custId));
-  if(!c) return;
-  _adminActiveCust = { id: custId, name: c.name, prod: c.prod || '' };
-
-  // تحديث الهيدر
-  const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-  document.getElementById('chat-convo-avatar').textContent = initials;
-  document.getElementById('chat-convo-name').textContent   = c.name;
-  document.getElementById('chat-convo-prod').textContent   = c.prod || '';
-
-  // إخفاء القائمة وإظهار المحادثة
-  document.getElementById('chat-list-view').style.display  = 'none';
-  document.getElementById('chat-convo-view').style.display = 'flex';
-
-  // استمع للرسائل
-  if(_adminConvoUnsub) _adminConvoUnsub();
-  const chatRef = collection(db, 'operaChats', String(custId), 'msgs');
-  const q = query(chatRef, orderBy('ts'));
-  _adminConvoUnsub = onSnapshotCol(q, snap => {
-    const msgs = [];
-    snap.forEach(d => msgs.push({id: d.id, ...d.data()}));
-    _renderAdminConvo(msgs);
-    // mark customer messages as read
-    snap.docs.forEach(d => {
-      if(d.data().sender === 'customer' && !d.data().read) {
-        updateDoc(d.ref, {read: true}).catch(()=>{});
-      }
-    });
-    _updateChatMenuBadge(0); // reset badge للمحادثة دي
-  });
-};
-
-function _renderAdminConvo(msgs) {
-  const el = document.getElementById('admin-chat-messages');
-  if(!el) return;
-  if(msgs.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.75rem;padding:20px">لا توجد رسائل بعد</div>';
-    return;
-  }
-  let html = '';
-  let lastDate = '';
-  msgs.forEach(m => {
-    const d  = m.ts ? new Date(m.ts) : new Date();
-    const ds = d.toLocaleDateString('ar-EG',{day:'numeric',month:'long'});
-    if(ds !== lastDate) {
-      html += `<div class="chat-date-sep-admin" style="text-align:center;font-size:0.55rem;color:var(--muted);margin:4px 0">${ds}</div>`;
-      lastDate = ds;
-    }
-    const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    const mine = m.sender === 'admin';
-    html += `<div class="admin-msg-row ${mine?'mine':'theirs'}">
-      <div class="admin-msg-bubble">${m.text.replace(/\n/g,'<br>')}</div>
-      <div class="admin-msg-time">${time}${mine?(m.read?' ✓✓':' ✓'):''}</div>
-    </div>`;
-  });
-  el.innerHTML = html;
-  setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
-}
-
-// ── رسالة رد من الأدمن ──
-window.adminSendMsg = async function() {
-  if(!_adminActiveCust) return;
-  const input = document.getElementById('admin-chat-input');
-  const text  = input?.value.trim();
-  if(!text) return;
-  input.value = '';
-  input.style.height = 'auto';
-  try {
-    await addDoc(collection(db, 'operaChats', String(_adminActiveCust.id), 'msgs'), {
-      text,
-      sender: 'admin',
-      ts: Date.now(),
-      read: false,
-    });
-  } catch(e) {
-    console.error('admin send error', e);
-    showToast('خطأ في الإرسال', 'error', 'fa-exclamation');
-  }
-};
-
-// ── رجوع للقائمة ──
-window.backToChatList = function() {
-  if(_adminConvoUnsub) { _adminConvoUnsub(); _adminConvoUnsub = null; }
-  _adminActiveCust = null;
-  document.getElementById('chat-list-view').style.display  = 'block';
-  document.getElementById('chat-convo-view').style.display = 'none';
-  _loadChatList();
-};
-
-// ── تحديث badge القائمة ──
-function _updateChatMenuBadge(count) {
-  const badge = document.getElementById('chat-menu-badge');
-  if(!badge) return;
-  if(count > 0) {
-    badge.textContent = count > 9 ? '9+' : count;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
-}
-
-// ── فورمات الوقت ──
-function _fmtChatTime(ts) {
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = now - d;
-  if(diff < 60000) return 'الآن';
-  if(diff < 3600000) return Math.round(diff/60000) + ' د';
-  if(diff < 86400000) return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  return d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
-}
-
-// ── تحميل badge عند فتح التطبيق ──
-setTimeout(async () => {
-  try {
-    let totalUnread = 0;
-    const allCusts = customers.filter(c => !c.archived);
-    await Promise.all(allCusts.map(async c => {
-      try {
-        const chatRef = collection(db, 'operaChats', String(c.id), 'msgs');
-        const snap = await getDocs(query(chatRef, where('sender','==','customer'), where('read','==',false)));
-        totalUnread += snap.size;
-      } catch(e) {}
-    }));
-    _updateChatMenuBadge(totalUnread);
-  } catch(e) {}
-}, 3000);
-
-window.openAdminChat   = window.openAdminChat;
-window.openAdminConvo  = window.openAdminConvo;
-window.adminSendMsg    = window.adminSendMsg;
-window.backToChatList  = window.backToChatList;
 </script>
 </body>
 </html>
