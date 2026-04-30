@@ -937,6 +937,10 @@ input, textarea, select { font-size: 0.88rem !important; }
       <p id="header-date"></p>
     </div>
     <div class="header-actions">
+      <button class="icon-btn" onclick="openAdminChat()" style="position:relative" title="رسائل العملاء">
+        <i class="fa-regular fa-comments"></i>
+        <span id="chat-header-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:0.45rem;font-weight:900;padding:1px 4px;min-width:14px;text-align:center;border:2px solid var(--surface);font-family:'Cairo',sans-serif"></span>
+      </button>
       <button class="icon-btn" id="logout-btn" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i> خروج</button>
     </div>
   </div>
@@ -2076,14 +2080,52 @@ input, textarea, select { font-size: 0.88rem !important; }
     </div>
     <!-- شاشة المحادثة المفتوحة -->
     <div id="chat-convo-view" style="display:none;height:100%;display:flex;flex-direction:column">
+      <!-- هيدر الاسم + زرار رجوع + ريفرش -->
       <div class="admin-chat-header">
-        <button onclick="backToChatList()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:0.65rem;cursor:pointer">
+        <button onclick="backToChatList()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:0.65rem;cursor:pointer;flex-shrink:0">
           <i class="fa-solid fa-arrow-right"></i> رجوع
         </button>
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.85rem" id="chat-convo-avatar"></div>
-        <div>
-          <div style="font-size:0.82rem;font-weight:800" id="chat-convo-name"></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.85rem;flex-shrink:0" id="chat-convo-avatar"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="chat-convo-name"></div>
           <div style="font-size:0.58rem;color:var(--muted)" id="chat-convo-prod"></div>
+        </div>
+        <button onclick="_refreshConvoStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 8px;color:var(--muted);font-size:0.7rem;cursor:pointer;flex-shrink:0" title="تحديث البيانات">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+      <!-- بطاقة تفاصيل العميل -->
+      <div id="chat-convo-stats" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 4px">
+            <div style="font-size:0.48rem;color:var(--muted);margin-bottom:2px">إجمالي العقد</div>
+            <div style="font-size:0.7rem;font-weight:800;color:var(--accent2)" id="cs-total">—</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 4px">
+            <div style="font-size:0.48rem;color:var(--muted);margin-bottom:2px">المدفوع</div>
+            <div style="font-size:0.7rem;font-weight:800;color:var(--green)" id="cs-paid">—</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 4px">
+            <div style="font-size:0.48rem;color:var(--muted);margin-bottom:2px">المتبقي</div>
+            <div style="font-size:0.7rem;font-weight:800;color:var(--blue)" id="cs-rem">—</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 4px">
+            <div style="font-size:0.48rem;color:var(--muted);margin-bottom:2px">متأخر</div>
+            <div style="font-size:0.7rem;font-weight:800" id="cs-due">—</div>
+          </div>
+        </div>
+        <div style="margin-top:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:0.55rem;color:var(--muted)">تقدم العقد</span>
+            <span style="font-size:0.55rem;font-weight:800;color:var(--accent2)" id="cs-progress-txt">—</span>
+          </div>
+          <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden">
+            <div id="cs-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width 0.5s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:0.5rem;color:var(--muted)" id="cs-months-done">—</span>
+            <span style="font-size:0.5rem;color:var(--muted)" id="cs-months-left">—</span>
+          </div>
         </div>
       </div>
       <div class="admin-chat-messages" id="admin-chat-messages"></div>
@@ -2426,6 +2468,9 @@ window.openAdminConvo = function(custId) {
   document.getElementById('chat-convo-name').textContent   = c.name;
   document.getElementById('chat-convo-prod').textContent   = c.prod || '';
 
+  // ملء بطاقة التفاصيل
+  _fillConvoStats(c);
+
   // إخفاء القائمة وإظهار المحادثة
   document.getElementById('chat-list-view').style.display  = 'none';
   document.getElementById('chat-convo-view').style.display = 'flex';
@@ -2496,6 +2541,50 @@ window.adminSendMsg = async function() {
   }
 };
 
+// ── ملء بطاقة تفاصيل العميل ──
+function _fillConvoStats(c) {
+  const statsEl = document.getElementById('chat-convo-stats');
+  if(!statsEl) return;
+  statsEl.style.display = 'block';
+
+  const paid    = c.payments.reduce((s,p) => s + p.amount, 0);
+  const ed      = c.earlyDiscount || 0;
+  const itc     = (c.total || 0) - (c.down || 0) - ed;
+  const rem     = Math.max(0, itc - paid);
+  const due     = calculateDueAmount(c);
+  const months  = c.months || Math.round(itc / (c.monthly || 1));
+  const paidMonths = Math.min(months, Math.round(paid / (c.monthly || 1)));
+  const leftMonths = Math.max(0, months - paidMonths);
+  const pct     = itc > 0 ? Math.round((paid / itc) * 100) : 0;
+
+  document.getElementById('cs-total').textContent = fmt(itc);
+  document.getElementById('cs-paid').textContent  = fmt(paid);
+  document.getElementById('cs-rem').textContent   = fmt(rem);
+
+  const dueEl = document.getElementById('cs-due');
+  dueEl.textContent = due > 0 ? fmt(due) : '—';
+  dueEl.style.color = due > 0 ? 'var(--red)' : 'var(--green)';
+
+  document.getElementById('cs-progress-txt').textContent  = pct + '%';
+  document.getElementById('cs-progress-bar').style.width  = pct + '%';
+  document.getElementById('cs-months-done').textContent   = paidMonths + ' شهر مدفوع';
+  document.getElementById('cs-months-left').textContent   = leftMonths + ' شهر متبقي من ' + months;
+}
+
+// ── ريفرش بيانات العميل ──
+window._refreshConvoStats = function() {
+  if(!_adminActiveCust) return;
+  const c = customers.find(x => String(x.id) === String(_adminActiveCust.id));
+  if(!c) return;
+  const btn = document.querySelector('[onclick="_refreshConvoStats()"]');
+  if(btn) {
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i>';
+    setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>'; }, 800);
+  }
+  _fillConvoStats(c);
+  showToast('تم تحديث البيانات', 'success', 'fa-check');
+};
+
 // ── رجوع للقائمة ──
 window.backToChatList = function() {
   if(_adminConvoUnsub) { _adminConvoUnsub(); _adminConvoUnsub = null; }
@@ -2507,13 +2596,25 @@ window.backToChatList = function() {
 
 // ── تحديث badge القائمة ──
 function _updateChatMenuBadge(count) {
+  // badge في القائمة
   const badge = document.getElementById('chat-menu-badge');
-  if(!badge) return;
-  if(count > 0) {
-    badge.textContent = count > 9 ? '9+' : count;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
+  if(badge) {
+    if(count > 0) {
+      badge.textContent = count > 9 ? '9+' : count;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+  // badge في الهيدر
+  const hbadge = document.getElementById('chat-header-badge');
+  if(hbadge) {
+    if(count > 0) {
+      hbadge.textContent = count > 9 ? '9+' : count;
+      hbadge.style.display = 'block';
+    } else {
+      hbadge.style.display = 'none';
+    }
   }
 }
 
