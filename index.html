@@ -941,6 +941,9 @@ input, textarea, select { font-size: 0.88rem !important; }
         <i class="fa-regular fa-comments"></i>
         <span id="chat-header-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:0.45rem;font-weight:900;padding:1px 4px;min-width:14px;text-align:center;border:2px solid var(--surface);font-family:'Cairo',sans-serif"></span>
       </button>
+      <button class="icon-btn" id="admin-refresh-btn" onclick="adminRefresh()" title="تحديث البيانات">
+        <i class="fa-solid fa-rotate-right" id="admin-refresh-icon"></i>
+      </button>
       <button class="icon-btn" id="logout-btn" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i> خروج</button>
     </div>
   </div>
@@ -1096,6 +1099,7 @@ input, textarea, select { font-size: 0.88rem !important; }
       <span class="chat-menu-badge" id="chat-menu-badge"></span>
     </button>
     <button class="menu-btn" onclick="openCustomMsgs()"><i class="fa-solid fa-comment-dots" style="color:var(--green)"></i> رسائل مخصصة</button>
+    <button class="menu-btn" onclick="openMsgTemplates()"><i class="fa-solid fa-pen-nib" style="color:var(--accent2)"></i> تعديل نصوص الرسائل</button>
     <button class="menu-btn" id="menu-broadcast-btn" onclick="openBroadcast()"><i class="fa-solid fa-tower-broadcast" style="color:var(--pink)"></i> إشعار لكل العملاء</button>
 
     <!-- قسم: السجلات والمتابعة -->
@@ -6605,6 +6609,29 @@ function icClearArchive() {
   showToast('🗑️ تم مسح الأرشيف', 'info');
 }
 
+// ======= ADMIN REFRESH =======
+async function adminRefresh() {
+  const icon = document.getElementById('admin-refresh-icon');
+  const btn  = document.getElementById('admin-refresh-btn');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  icon.style.transition = 'transform 0.7s linear';
+  icon.style.transform  = 'rotate(360deg)';
+  try {
+    const [c, s] = await Promise.all([
+      window.fbLoad('customers', 'inst_manager_v2_data'),
+      window.fbLoad('savings',   'savings_v2_data'),
+    ]);
+    if(c) { window._fbCustomers = c; customers = c; }
+    if(s) { window._fbSavings = s;   savings   = s; }
+    render();
+    showToast('✅ تم التحديث', 'success', 'fa-check');
+  } catch(e) {
+    showToast('❌ فشل التحديث', 'error', 'fa-xmark');
+  }
+  setTimeout(() => { icon.style.transition=''; icon.style.transform=''; btn.disabled=false; }, 800);
+}
+
 function icShowSettings() {
   openM('ic-settings-modal');
 }
@@ -6616,5 +6643,105 @@ function icSaveSettings() {
 
 
 </script>
+
+<!-- ===== MSG TEMPLATES MODAL ===== -->
+<div class="modal-overlay" id="msg-templates-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeToMenu('msg-templates-modal')">رجوع</div>
+    <div class="modal-title"><i class="fa-solid fa-pen-nib" style="color:var(--accent2)"></i> تعديل نصوص الرسائل</div>
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.7">يمكنك تعديل نص الرسالة بحرية. الكلمات بين <b style="color:var(--accent2)">{{}}</b> بيانات تلقائية لا تحذفها.</p>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:0.75rem;font-weight:700;color:var(--text);display:block;margin-bottom:4px"><i class="fa-solid fa-bell" style="color:var(--orange)"></i> رسالة التذكير بالمتأخرات</label>
+      <div style="font-size:0.63rem;color:var(--muted);margin-bottom:6px">المتغيرات: {{اسم_العميل}} {{المبلغ}} {{عدد_الأقساط}}</div>
+      <textarea id="tpl-remind" rows="4" style="width:100%;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none;resize:vertical;line-height:1.7"></textarea>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <label style="font-size:0.75rem;font-weight:700;color:var(--text);display:block;margin-bottom:4px"><i class="fa-solid fa-calendar-check" style="color:var(--blue)"></i> رسالة تنبيه القسط القادم</label>
+      <div style="font-size:0.63rem;color:var(--muted);margin-bottom:6px">المتغيرات: {{اسم_العميل}} {{المنتج}} {{تاريخ_القسط}} {{أيام_متبقية}} {{قيمة_القسط}} {{متأخرات}}</div>
+      <textarea id="tpl-alert" rows="5" style="width:100%;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none;resize:vertical;line-height:1.7"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-green" onclick="saveMsgTemplates()" style="flex:1"><i class="fa-solid fa-check"></i> حفظ</button>
+      <button class="btn" onclick="resetMsgTemplates()" style="flex:1;background:var(--surface3);color:var(--muted);border:1px solid var(--border)"><i class="fa-solid fa-rotate-left"></i> إعادة تعيين</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== MSG TEMPLATES =====
+const TPL_KEY = 'opera_msg_templates';
+
+const TPL_DEFAULTS = {
+  remind: `العميل: {{اسم_العميل}}،\nنود تذكيركم بمبلغ {{المبلغ}} ج.م\nمستحق عن ({{عدد_الأقساط}}) قسط متأخر.\nيرجى السداد في أقرب وقت.`,
+  alert:  `العميل: {{اسم_العميل}}\nتنبيه بموعد القسط القادم لـ ({{المنتج}})\nبتاريخ {{تاريخ_القسط}} (متبقي {{أيام_متبقية}} يومًا)\nقيمة القسط: {{قيمة_القسط}} ج.م\nومتأخرات سابقة: {{متأخرات}} ج.م`
+};
+
+function getMsgTemplates() {
+  try { return JSON.parse(localStorage.getItem(TPL_KEY)) || TPL_DEFAULTS; } catch(e) { return TPL_DEFAULTS; }
+}
+
+function openMsgTemplates() {
+  const tpl = getMsgTemplates();
+  document.getElementById('tpl-remind').value = tpl.remind;
+  document.getElementById('tpl-alert').value  = tpl.alert;
+  openM('msg-templates-modal');
+}
+
+function saveMsgTemplates() {
+  const tpl = {
+    remind: document.getElementById('tpl-remind').value.trim(),
+    alert:  document.getElementById('tpl-alert').value.trim()
+  };
+  localStorage.setItem(TPL_KEY, JSON.stringify(tpl));
+  if(window.fbSave) window.fbSave('msg_templates', tpl).catch(()=>{});
+  showToast('✅ تم حفظ الرسائل', 'success', 'fa-check');
+  closeToMenu('msg-templates-modal');
+}
+
+function resetMsgTemplates() {
+  if(!confirm('إعادة تعيين الرسائل للنصوص الافتراضية؟')) return;
+  localStorage.removeItem(TPL_KEY);
+  document.getElementById('tpl-remind').value = TPL_DEFAULTS.remind;
+  document.getElementById('tpl-alert').value  = TPL_DEFAULTS.alert;
+  showToast('تم الإعادة للافتراضي', 'info');
+}
+
+// تعديل دالتي الإرسال عشان تقرأ من القوالب
+const _origRemind = window.remindDirectly;
+window.remindDirectly = function(id) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) { showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock'); return; }
+  const c = customers.find(x => x.id===id); if(!c) return;
+  const due = calculateDueAmount(c), late = c.monthly>0 ? Math.ceil(due/c.monthly) : 0;
+  const tpl = getMsgTemplates().remind;
+  const txt = tpl
+    .replace(/{{اسم_العميل}}/g, c.name)
+    .replace(/{{المبلغ}}/g, fmt(due))
+    .replace(/{{عدد_الأقساط}}/g, late);
+  window.open(`https://wa.me/2${c.phone}?text=${encodeURIComponent(txt)}`, '_blank');
+};
+
+const _origAlert = window.alertUpcomingDue;
+window.alertUpcomingDue = function(id) {
+  if(!hasPermission('canWA') && !currentUser.isAdmin) { showToast('ليس لديك صلاحية لإرسال رسائل', 'error', 'fa-lock'); return; }
+  const c = customers.find(x => x.id===id); if(!c) return;
+  const now = new Date(); now.setHours(0,0,0,0);
+  let t = safeDueDate(now.getFullYear(), now.getMonth(), c.dueDay);
+  if(now.getDate() > c.dueDay) t = safeDueDate(t.getFullYear(), t.getMonth()+1, c.dueDay);
+  const diff = Math.ceil((t-now)/(1000*60*60*24)), due = calculateDueAmount(c);
+  const tpl = getMsgTemplates().alert;
+  const txt = tpl
+    .replace(/{{اسم_العميل}}/g, c.name)
+    .replace(/{{المنتج}}/g, c.prod||'')
+    .replace(/{{تاريخ_القسط}}/g, `${t.getDate()}/${t.getMonth()+1}/${t.getFullYear()}`)
+    .replace(/{{أيام_متبقية}}/g, diff)
+    .replace(/{{قيمة_القسط}}/g, fmt(c.monthly))
+    .replace(/{{متأخرات}}/g, fmt(due));
+  window.open(`https://wa.me/2${c.phone}?text=${encodeURIComponent(txt)}`, '_blank');
+};
+</script>
+
 </body>
 </html>
