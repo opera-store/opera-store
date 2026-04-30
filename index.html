@@ -3456,12 +3456,9 @@ function render() {
     document.getElementById('report-active-filter').innerText = currentDayFilter ? `نتائج عملاء يوم: ${currentDayFilter}` : 'النتائج الإجمالية لكافة العملاء';
     let totalSP=0, totalIP=0;
     customers.forEach(c => {
-      if(!c.total || c.total <= 0) return; // تجاهل العملاء بدون عقد حقيقي
-      const cBuy  = c.buy  || 0;
-      const cSell = c.sell || 0;
-      totalSP += (cSell > 0) ? (cSell - cBuy) : 0;
-      let bip = (cSell > 0) ? (c.total - cSell) : (c.total - cBuy);
-      totalIP += (bip - (c.earlyDiscount || 0));
+      totalSP += (c.sell>0) ? (c.sell-c.buy) : 0;
+      let bip = (c.sell>0) ? (c.total-c.sell) : (c.total-c.buy);
+      totalIP += (bip-(c.earlyDiscount||0));
     });
     const stats = [
       {l:'إجمالي السوق',v:mktNet,sub:mktNet-totalD,c:'var(--blue)'},
@@ -3654,10 +3651,24 @@ function calcEarlySettlement() {
   const paid         = c.payments.reduce((s,p) => s + p.amount, 0);
   const ed           = c.earlyDiscount || 0;
 
-  // عدد الشهور التي مرت فعلياً (من تاريخ الاستلام)
-  const monthsPassed = c.receiveDate
-    ? Math.max(0, Math.floor((Date.now() - new Date(c.receiveDate).getTime()) / (1000*60*60*24*30.44)))
-    : 0;
+  // عدد الشهور التي مرت فعلياً (من تاريخ الاستلام) مع منطق الأيام
+  function calcMonthsPassed(receiveDate) {
+    if(!receiveDate) return 0;
+    const start = new Date(receiveDate);
+    const now   = new Date();
+    // الشهور الكاملة المنقضية
+    let fullMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    // أيام مرت من الشهر الحالي
+    const dayOfMonth = now.getDate() - start.getDate();
+    // لو سالب يعني لسه مجاش يوم البداية في الشهر الحالي = 0 أيام إضافية
+    const daysIn = dayOfMonth >= 0 ? dayOfMonth : 0;
+    // 1-15 يوم = نص شهر (2.5%) | 16-23 يوم = تلت تربع (3.75%) | 24-30 يوم = شهر كامل (5%)
+    if(daysIn >= 1 && daysIn <= 15)       fullMonths += 0.5;
+    else if(daysIn >= 16 && daysIn <= 23) fullMonths += 0.75;
+    else if(daysIn >= 24)                 fullMonths += 1;
+    return Math.max(0, fullMonths);
+  }
+  const monthsPassed = calcMonthsPassed(c.receiveDate);
 
   // فائدة الشهور اللي مرت = الأصل × 5% × عدد الشهور — بحد أدنى 15%
   const rawRate      = 0.05 * monthsPassed;
