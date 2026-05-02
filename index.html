@@ -937,7 +937,7 @@ input, textarea, select { font-size: 0.88rem !important; }
       <p id="header-date"></p>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="openAdminChat()" style="position:relative" title="رسائل العملاء">
+      <button class="icon-btn" id="header-chat-btn" onclick="openAdminChat()" style="position:relative" title="رسائل العملاء">
         <i class="fa-regular fa-comments"></i>
         <span id="chat-header-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:0.45rem;font-weight:900;padding:1px 4px;min-width:14px;text-align:center;border:2px solid var(--surface);font-family:'Cairo',sans-serif"></span>
       </button>
@@ -1069,6 +1069,7 @@ input, textarea, select { font-size: 0.88rem !important; }
 
     <!-- قسم: المالية والحسابات -->
     <div class="menu-section-label">💰 المالية والحسابات</div>
+    <button class="menu-btn" onclick="closeM('menu-modal');openInvestorsModal()"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--green)"></i> إدارة المستثمرين <span id="investor-badge" class="badge" style="background:rgba(52,211,153,0.15);color:var(--green)"></span></button>
     <button class="menu-btn" onclick="closeM('menu-modal');openInstCalc()">
       <i class="fa-solid fa-calculator" style="color:var(--accent2)"></i> حاسبة الأقساط
     </button>
@@ -1087,14 +1088,14 @@ input, textarea, select { font-size: 0.88rem !important; }
     <!-- قسم: البيانات والتصدير -->
     <div class="menu-section-label">📦 البيانات والتصدير</div>
     <button class="menu-btn" onclick="openProductsModal()"><i class="fa-solid fa-boxes-stacked" style="color:var(--green)"></i> المنتجات</button>
-    <button class="menu-btn" onclick="closeM('menu-modal');openStoreManager()"><i class="fa-solid fa-bag-shopping" style="color:var(--pink)"></i> إدارة متجر العملاء</button>
+    <button class="menu-btn" id="menu-store-btn" onclick="closeM('menu-modal');openStoreManager()"><i class="fa-solid fa-bag-shopping" style="color:var(--pink)"></i> إدارة متجر العملاء</button>
     <button class="menu-btn" onclick="openArchive()"><i class="fa-solid fa-box-archive" style="color:var(--accent2)"></i> الأرشيف</button>
     <button class="menu-btn" id="menu-pdf-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf" style="color:var(--orange)"></i> تصدير تقرير PDF</button>
     <button class="menu-btn" id="menu-excel-btn" onclick="exportExcel()"><i class="fa-solid fa-file-excel" style="color:var(--green)"></i> تصدير Excel</button>
 
     <!-- قسم: التواصل -->
     <div class="menu-section-label">💬 التواصل</div>
-    <button class="menu-btn" onclick="closeM('menu-modal');openAdminChat()" style="position:relative">
+    <button class="menu-btn" id="menu-chat-btn" onclick="closeM('menu-modal');openAdminChat()" style="position:relative">
       <i class="fa-regular fa-comments" style="color:var(--accent2)"></i> شات العملاء
       <span class="chat-menu-badge" id="chat-menu-badge"></span>
     </button>
@@ -1238,6 +1239,18 @@ input, textarea, select { font-size: 0.88rem !important; }
         <label>🐷 إدارة حسابات التحويش</label>
         <input type="checkbox" id="perm-savings">
       </div>
+      <div class="permission-item">
+        <label>📋 عرض سجل التحديثات</label>
+        <input type="checkbox" id="perm-updates">
+      </div>
+      <div class="permission-item">
+        <label>🏪 تعديل بيانات المتجر</label>
+        <input type="checkbox" id="perm-store">
+      </div>
+      <div class="permission-item">
+        <label>💬 فتح محادثات العملاء</label>
+        <input type="checkbox" id="perm-chat" checked>
+      </div>
     </div>
     <p style="font-size:0.65rem;color:var(--muted);text-align:center;margin-bottom:12px">
       كلمة المرور الافتراضية: 1234 (يمكن تغييرها من قبل الموظف لاحقاً)
@@ -1245,6 +1258,137 @@ input, textarea, select { font-size: 0.88rem !important; }
     <button class="btn btn-green" onclick="saveStaffMember()"><i class="fa-solid fa-check"></i> حفظ الموظف</button>
   </div>
 </div>
+
+<!-- ===== INVESTOR MODALS ===== -->
+
+<!-- قائمة المستثمرين -->
+<div class="modal-overlay" id="investors-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeToMenu('investors-modal')">رجوع</div>
+    <div class="modal-title"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--green)"></i> المستثمرون</div>
+    <!-- ملخص عام -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:0.55rem;color:var(--muted)">إجمالي رؤوس الأموال</div>
+        <div id="inv-total-capital" style="font-size:1rem;font-weight:900;color:var(--green)">0</div>
+        <div style="font-size:0.5rem;color:var(--muted)">ج.م</div>
+      </div>
+      <div style="background:rgba(124,107,255,0.08);border:1px solid rgba(124,107,255,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:0.55rem;color:var(--muted)">إجمالي الأرباح الموزعة</div>
+        <div id="inv-total-profit" style="font-size:1rem;font-weight:900;color:var(--accent2)">0</div>
+        <div style="font-size:0.5rem;color:var(--muted)">ج.م</div>
+      </div>
+    </div>
+    <button class="btn btn-green" style="margin-bottom:16px" onclick="openM('add-investor-modal')">
+      <i class="fa-solid fa-plus"></i> إضافة مستثمر جديد
+    </button>
+    <div id="investors-list-content"></div>
+  </div>
+</div>
+
+<!-- إضافة مستثمر -->
+<div class="modal-overlay" id="add-investor-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeM('add-investor-modal')">إلغاء</div>
+    <div class="modal-title">إضافة مستثمر</div>
+    <div class="form-grid">
+      <div class="field"><label>اسم المستثمر</label><input type="text" id="inv-name" placeholder="الاسم الكامل"></div>
+      <div class="field"><label>رقم التليفون</label><input type="tel" id="inv-phone" placeholder="01x..."></div>
+      <div class="field"><label>رأس المال (ج.م)</label><input type="number" id="inv-capital" placeholder="مثال: 50000"></div>
+      <div class="field"><label>نسبة الربح للمستثمر %</label><input type="number" id="inv-profit-pct" placeholder="مثال: 40" value="40"></div>
+      <div class="field" style="grid-column:span 2"><label>تاريخ بدء المضاربة</label><input type="date" id="inv-start-date"></div>
+      <div class="field" style="grid-column:span 2"><label>ملاحظات (اختياري)</label><input type="text" id="inv-notes" placeholder="أي ملاحظات..."></div>
+    </div>
+    <button class="btn btn-green" onclick="addInvestor()"><i class="fa-solid fa-check"></i> حفظ المستثمر</button>
+  </div>
+</div>
+
+<!-- تفاصيل مستثمر -->
+<div class="modal-overlay" id="investor-detail-modal">
+  <div class="modal-panel">
+    <div class="back-btn" onclick="closeM('investor-detail-modal');openInvestorsModal()">رجوع</div>
+    <div class="modal-title" id="inv-detail-name">تفاصيل المستثمر</div>
+
+    <!-- بطاقة الملخص المالي -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="text-align:center">
+          <div style="font-size:0.58rem;color:var(--muted)">رأس المال</div>
+          <div id="inv-d-capital" style="font-size:1rem;font-weight:900;color:var(--text)">0</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:0.58rem;color:var(--muted)">نسبة الربح</div>
+          <div id="inv-d-pct" style="font-size:1rem;font-weight:900;color:var(--accent2)">0%</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:0.58rem;color:var(--muted)">محصّل من رأس المال</div>
+          <div id="inv-d-collected" style="font-size:1rem;font-weight:900;color:var(--blue)">0</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:0.58rem;color:var(--muted)">أرباح موزعة عليه</div>
+          <div id="inv-d-profit" style="font-size:1rem;font-weight:900;color:var(--green)">0</div>
+        </div>
+      </div>
+      <!-- شريط تقدم رأس المال -->
+      <div style="margin-top:6px">
+        <div style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--muted);margin-bottom:4px">
+          <span>نسبة استرداد رأس المال</span>
+          <span id="inv-d-pct-bar">0%</span>
+        </div>
+        <div style="height:6px;background:var(--surface3);border-radius:4px;overflow:hidden">
+          <div id="inv-d-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:4px;transition:width 0.5s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- العملاء المرتبطين بهذا المستثمر -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:0.7rem;font-weight:700;color:var(--text);margin-bottom:8px">
+        <i class="fa-solid fa-users" style="color:var(--accent)"></i> العملاء الممولون من رأس ماله
+      </div>
+      <div id="inv-linked-customers" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- إضافة توزيع ربح يدوي -->
+    <div class="pay-box" style="margin-bottom:12px">
+      <div class="lbl" style="margin-bottom:6px"><i class="fa-solid fa-coins" style="color:var(--green)"></i> توزيع ربح يدوي</div>
+      <div class="pay-grid">
+        <input type="number" id="inv-profit-amount" placeholder="مبلغ الربح">
+        <input type="text" id="inv-profit-note" placeholder="ملاحظة">
+      </div>
+      <button class="btn btn-green" style="margin-top:8px" onclick="addInvestorProfit()">
+        <i class="fa-solid fa-check"></i> تسجيل توزيع ربح
+      </button>
+    </div>
+
+    <!-- سجل العمليات -->
+    <div style="font-size:0.7rem;font-weight:700;color:var(--text);margin-bottom:8px">📋 سجل العمليات</div>
+    <div id="inv-ops-history"></div>
+
+    <!-- أزرار -->
+    <div class="contact-row" style="margin-top:12px">
+      <button class="contact-btn" style="background:var(--green);color:#fff;grid-column:span 2" onclick="sendInvestorWA()">
+        <i class="fa-brands fa-whatsapp"></i> إرسال تقرير واتساب
+      </button>
+      <button class="contact-btn" style="background:var(--surface3);color:var(--red);border:1px solid var(--border);grid-column:span 2" onclick="printInvestorContract()">
+        <i class="fa-solid fa-file-contract"></i> طباعة عقد المضاربة
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- عقد المضاربة للطباعة -->
+<div class="modal-overlay" id="investor-contract-modal">
+  <div class="modal-panel" style="max-width:700px;overflow-y:auto">
+    <div class="back-btn" onclick="closeM('investor-contract-modal')">رجوع</div>
+    <button class="btn btn-green" style="margin-bottom:16px;width:100%" onclick="window.print()">
+      <i class="fa-solid fa-print"></i> طباعة / حفظ PDF
+    </button>
+    <div id="inv-contract-content" style="font-family:'Cairo',sans-serif;line-height:2;color:var(--text)"></div>
+  </div>
+</div>
+
+<!-- ربط عميل بمستثمر (داخل بروفايل العميل) -->
 
 <!-- ===== SAVINGS MODALS ===== -->
 <div class="modal-overlay" id="savings-modal">
@@ -1506,6 +1650,16 @@ input, textarea, select { font-size: 0.88rem !important; }
     <input type="hidden" id="inst-total">
     <input type="hidden" id="monthly-val">
     <input type="hidden" id="months-count">
+
+    <!-- ربط بمستثمر -->
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.72rem;font-weight:700;color:var(--text);display:block;margin-bottom:6px">
+        <i class="fa-solid fa-hand-holding-dollar" style="color:var(--green)"></i> مصدر التمويل (اختياري)
+      </label>
+      <select id="cust-investor-id" style="width:100%;padding:10px 12px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none">
+        <option value="">— بدون مستثمر —</option>
+      </select>
+    </div>
 
     <button class="btn btn-green" onclick="saveCustomer()"><i class="fa-solid fa-check"></i> إنشاء الحساب</button>
   </div>
@@ -2209,6 +2363,7 @@ window.fbLoad = async function(key, localKey) {
 window.startRealtimeSync = function() {
   const keys = [
     { fbKey: 'customers', varName: 'customers' },
+    { fbKey: 'investors', varName: 'investors' },
     { fbKey: 'savings',   varName: 'savingsAccounts' },
     { fbKey: 'trash',     varName: 'trashItems' },
     { fbKey: 'staff',     varName: 'staffMembers' },
@@ -2224,6 +2379,13 @@ window.startRealtimeSync = function() {
           customers = newData;
           window._fbCustomers = newData;
           render();
+        } else if(varName === 'investors') {
+          if(typeof investors !== 'undefined') investors = newData;
+          else window._fbInvestors = newData;
+          localStorage.setItem('investors_v1_data', JSON.stringify(newData));
+          const invBadge = document.getElementById('investor-badge');
+          if(invBadge) invBadge.textContent = newData.length || '';
+          if(typeof populateInvestorSelect === 'function') populateInvestorSelect();
         } else if(varName === 'savingsAccounts') {
           savingsAccounts = newData;
           window._fbSavings = newData;
@@ -2267,7 +2429,8 @@ window.loadAllFromFirebase = async function() {
   if(loadEl) loadEl.style.display = 'flex';
 
   try {
-    const [c, s, t, creds, staff, actLog] = await Promise.all([
+    const [inv, c, s, t, creds, staff, actLog] = await Promise.all([
+      window.fbLoad('investors', 'investors_v1_data'),
       window.fbLoad('customers', 'inst_manager_v2_data'),
       window.fbLoad('savings', 'savings_v2_data'),
       window.fbLoad('trash', 'opera_trash_v1'),
@@ -2275,6 +2438,7 @@ window.loadAllFromFirebase = async function() {
       window.fbLoad('staff', 'opera_staff_v1'),
       window.fbLoad('activity_log', 'opera_activity_log'),
     ]);
+    if(inv) { window._fbInvestors = inv; localStorage.setItem('investors_v1_data', JSON.stringify(inv)); }
     if(c) window._fbCustomers = c;
     if(s) window._fbSavings = s;
     if(t) window._fbTrash = t;
@@ -2375,6 +2539,9 @@ let _adminActiveCust  = null; // { id, name, prod }
 
 // ── فتح شاشة الشات ──
 window.openAdminChat = function() {
+  if(!currentUser.isAdmin && currentUser.permissions && currentUser.permissions.canChat === false) {
+    showToast('ليس لديك صلاحية لفتح المحادثات', 'error', 'fa-lock'); return;
+  }
   document.getElementById('chat-list-view').style.display  = 'block';
   document.getElementById('chat-convo-view').style.display = 'none';
   openM('chat-modal');
@@ -2870,8 +3037,16 @@ function applyPermissions() {
   if(menuDataBtn) menuDataBtn.style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('report-btn').style.display = (isAdmin || perms.canViewReport) ? 'flex' : 'none';
   document.getElementById('menu-logs-btn').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('menu-activity-btn').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('menu-editlog-btn').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('menu-activity-btn').style.display = (isAdmin || perms.canViewUpdates) ? 'flex' : 'none';
+  document.getElementById('menu-editlog-btn').style.display = (isAdmin || perms.canViewUpdates) ? 'flex' : 'none';
+  const storeBtn = document.getElementById('menu-store-btn');
+  if(storeBtn) storeBtn.style.display = (isAdmin || perms.canEditStore) ? 'flex' : 'none';
+  // صلاحية المحادثات — canChat = true بالافتراضي للمدير دايماً
+  const chatAllowed = isAdmin || perms.canChat !== false;
+  const hdrChatBtn  = document.getElementById('header-chat-btn');
+  const menuChatBtn = document.getElementById('menu-chat-btn');
+  if(hdrChatBtn)  hdrChatBtn.style.display  = chatAllowed ? '' : 'none';
+  if(menuChatBtn) menuChatBtn.style.display = chatAllowed ? 'flex' : 'none';
   document.getElementById('menu-pdf-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-trash-btn').style.display = isAdmin ? 'flex' : 'none';
   document.getElementById('menu-staff-btn').style.display = isAdmin ? 'flex' : 'none';
@@ -2911,7 +3086,10 @@ function applyPermissions() {
 function hasPermission(action) {
   if(currentUser.isAdmin) return true;
   if(!currentUser.permissions) return false;
-  if(action === 'viewReport') return currentUser.permissions.canViewReport || false;
+  if(action === 'viewReport')    return currentUser.permissions.canViewReport  || false;
+  if(action === 'viewUpdates')   return currentUser.permissions.canViewUpdates || false;
+  if(action === 'editStore')     return currentUser.permissions.canEditStore   || false;
+  if(action === 'canChat')       return currentUser.permissions.canChat !== false;
   return currentUser.permissions[action] || false;
 }
 
@@ -2935,7 +3113,7 @@ function renderStaffList() {
       <div class="staff-icon"><i class="fa-solid fa-user-tie"></i></div>
       <div class="staff-info">
         <div class="staff-name">${s.name}</div>
-        <div class="staff-meta">@${s.username} | ${s.permissions.canPay ? 'تحصيل' : ''} ${s.permissions.canAdd ? 'إضافة' : ''}</div>
+        <div class="staff-meta">@${s.username} | ${s.permissions.canPay?'تحصيل ':''} ${s.permissions.canAdd?'إضافة ':''} ${s.permissions.canViewUpdates?'📋 ':''} ${s.permissions.canEditStore?'🏪 ':''}</div>
       </div>
       <button class="btn-sm" style="background:var(--blue);color:#fff;margin-right:4px" onclick="editStaff(${s.id})"><i class="fa-solid fa-pen"></i></button>
       <button class="btn-sm btn-del" onclick="deleteStaff(${s.id})"><i class="fa-solid fa-trash"></i></button>
@@ -2957,6 +3135,9 @@ function openAddStaffModal() {
   document.getElementById('perm-delete').checked = false;
   document.getElementById('perm-report').checked = false;
   document.getElementById('perm-savings').checked = false;
+  document.getElementById('perm-updates').checked = false;
+  document.getElementById('perm-store').checked = false;
+  document.getElementById('perm-chat').checked = true;
   openM('add-staff-modal');
 }
 
@@ -2975,6 +3156,9 @@ function editStaff(id) {
   document.getElementById('perm-delete').checked = s.permissions.canDelete || false;
   document.getElementById('perm-report').checked = s.permissions.canViewReport || false;
   document.getElementById('perm-savings').checked = s.permissions.canSavings || false;
+  document.getElementById('perm-updates').checked = s.permissions.canViewUpdates || false;
+  document.getElementById('perm-store').checked = s.permissions.canEditStore || false;
+  document.getElementById('perm-chat').checked = s.permissions.canChat !== false;
   openM('add-staff-modal');
 }
 
@@ -3003,7 +3187,10 @@ function saveStaffMember() {
     canAdd: document.getElementById('perm-add').checked,
     canDelete: document.getElementById('perm-delete').checked,
     canViewReport: document.getElementById('perm-report').checked,
-    canSavings: document.getElementById('perm-savings').checked
+    canSavings: document.getElementById('perm-savings').checked,
+    canViewUpdates: document.getElementById('perm-updates').checked,
+    canEditStore: document.getElementById('perm-store').checked,
+    canChat: document.getElementById('perm-chat').checked
   };
   
   if(id) {
@@ -3150,6 +3337,9 @@ function openSavingsModal() {
   renderSavingsList();
   const b = document.getElementById('savings-badge');
   b.textContent = savingsAccounts.length ? savingsAccounts.length : '';
+  // تحديث badge المستثمرين
+  const invBadge = document.getElementById('investor-badge');
+  if(invBadge) invBadge.textContent = investors.length ? investors.length : '';
   openM('savings-modal');
 }
 
@@ -3524,10 +3714,12 @@ function saveCustomer() {
     monthly:parseFloat(document.getElementById('monthly-val').value)||0,
     earlyDiscount:0, payments:[], archived:false,
     date:new Date().toISOString().split('T')[0],
+    investorId: parseInt(document.getElementById('cust-investor-id').value) || null,
   };
   customers.push(c); save(); closeM('add-modal');
   logEdit('إضافة عميل', c.name, `${fmt(c.total)} ج.م — ${c.prod||''}`);
   ['cust-name','cust-phone','prod-name','buy-price','sell-price','down-payment','months-input','inst-total','monthly-val','receive-date','months-count'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const invSel = document.getElementById('cust-investor-id'); if(invSel) invSel.value = '';
   document.getElementById('smart-calc-result').style.display = 'none';
   render();
   showToast(`تم إضافة ${n} بنجاح`);
@@ -3798,16 +3990,22 @@ function sendWA(phone,name,amount,rem,ref='') {
   const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
   const refLine = ref ? `\nرقم العملية: #${ref}` : '';
 
+  // جيب بيانات العميل كاملة لملء القالب بشكل صحيح
+  const cust = customers.find(x => (x.phone||'').replace(/\D/g,'') === (phone||'').replace(/\D/g,''));
+  const prod = cust ? (cust.prod || '') : '';
+  const totalPaid = cust ? cust.payments.reduce((s,p) => s+p.amount, 0) : amount;
+
   let txt;
   const tplFn = window.getMsgTemplates || null;
   const tpl   = tplFn ? tplFn().receipt : null;
 
   if(tpl) {
+    const payLine = `${dateStr}  ${fmt(amount)} ج.م${ref?' (#'+ref+')':''}\n`;
     txt = tpl
       .replace(/{{اسم_العميل}}/g, name)
-      .replace(/{{المنتج}}/g, '')
-      .replace(/{{سجل_الدفعات}}/g, `مبلغ ${fmt(amount)} بتاريخ ${dateStr}${ref?' رقم العملية: #'+ref:''}\n`)
-      .replace(/{{إجمالي_مدفوع}}/g, fmt(amount))
+      .replace(/{{المنتج}}/g, prod)
+      .replace(/{{سجل_الدفعات}}/g, payLine)
+      .replace(/{{إجمالي_مدفوع}}/g, fmt(totalPaid))
       .replace(/{{إجمالي_متبقي}}/g, fmt(rem))
       .replace(/{{المطلوب}}/g, fmt(rem));
   } else {
@@ -4872,7 +5070,7 @@ function logEdit(action, custName, details = '') {
 }
 
 function openEditLog() {
-  if(!currentUser.isAdmin) { showToast('المدير فقط', 'error', 'fa-lock'); return; }
+  if(!currentUser.isAdmin && !hasPermission('viewUpdates')) { showToast('ليس لديك صلاحية لعرض سجل التعديلات', 'error', 'fa-lock'); return; }
   document.getElementById('edit-log-search').value = '';
   // جلب أحدث بيانات من Firebase
   if(window.fbLoad) {
@@ -5372,29 +5570,75 @@ function buildDashboard(keepScroll) {
       </div>` : ''}
     </div>
 
-    <!-- ═══ Forecast التحصيل القادم ═══ -->
+    <!-- ═══ Forecast التحصيل القادم (مبني على الأقساط الفعلية) ═══ -->
+    ${(()=>{
+      const forecastRange = window._forecastRange || 3;
+      const months3  = ['يناير','فبراير','مارس','إبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      const now3 = new Date();
+      function calcForecastMonth(targetMonth) {
+        let expected = 0; let customerCount = 0;
+        activeCustomers.forEach(c => {
+          if(!c.monthly || c.monthly <= 0) return;
+          const paid = c.payments.reduce((s,p) => s + p.amount, 0);
+          const ed   = c.earlyDiscount || 0;
+          const rem  = (c.total - c.down - ed) - paid;
+          if(rem <= 0) return;
+          const monthlyRemaining = Math.ceil(rem / c.monthly);
+          if(monthlyRemaining >= targetMonth) { expected += c.monthly; customerCount++; }
+        });
+        return { expected, customerCount };
+      }
+      const forecastData = [];
+      for(let i = 1; i <= forecastRange; i++) {
+        const d = new Date(now3.getFullYear(), now3.getMonth() + i, 1);
+        const label = months3[d.getMonth()].slice(0,3) + (d.getFullYear()!==now3.getFullYear()?"'"+String(d.getFullYear()).slice(2):'');
+        const { expected, customerCount } = calcForecastMonth(i);
+        forecastData.push({ label, expected, customerCount });
+      }
+      const maxForecast = Math.max(...forecastData.map(x => x.expected), 1);
+      const totalForecast = forecastData.reduce((s,m) => s + m.expected, 0);
+      const avgForecast   = forecastRange > 0 ? Math.round(totalForecast / forecastRange) : 0;
+      const rangeLabel = forecastRange === 3 ? '3 أشهر' : forecastRange === 6 ? '6 أشهر' : '12 شهر';
+      const cols = forecastRange <= 3 ? 3 : forecastRange <= 6 ? 3 : 4;
+      return `
     <div class="chart-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--surface),rgba(52,211,153,0.04))">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div class="chart-title" style="margin-bottom:0">🔮 توقعات التحصيل</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="chart-title" style="margin-bottom:0">🔮 توقعات التحصيل — أقساط فعلية</div>
         <div style="display:flex;gap:4px">
           ${[3,6,12].map(n=>`<button onclick="window._forecastRange=${n};buildDashboard(true)" style="padding:3px 8px;border-radius:12px;border:1px solid ${(window._forecastRange||3)===n?'var(--accent)':'var(--border)'};background:${(window._forecastRange||3)===n?'var(--accent)':'var(--surface3)'};color:${(window._forecastRange||3)===n?'#fff':'var(--muted)'};font-family:Cairo,sans-serif;font-size:0.55rem;font-weight:700;cursor:pointer">${n} شهر</button>`).join('')}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${Math.min(forecastMonths.length,6)},1fr);gap:5px">
-        ${forecastMonths.map((m,i) => `
-          <div style="background:${m.isApprox?'rgba(251,146,60,0.06)':'var(--surface2)'};border:1px solid ${m.isApprox?'rgba(251,146,60,0.2)':'var(--border2)'};border-radius:var(--radius);padding:7px;text-align:center">
-            <div style="font-size:0.5rem;color:var(--muted);margin-bottom:3px">${m.label}</div>
-            <div style="font-size:0.75rem;font-weight:800;color:${m.isApprox?'var(--orange)':'var(--green)'}">${fmt(m.adjusted)}</div>
-            <div style="height:3px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:4px">
-              <div style="height:100%;width:${m.expected>0?Math.round((m.adjusted/m.expected)*100):0}%;background:${m.isApprox?'var(--orange)':'var(--green)'};border-radius:3px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:3px">إجمالي التوقع (${rangeLabel})</div>
+          <div style="font-size:1rem;font-weight:900;color:var(--green)">${fmt(totalForecast)}</div>
+          <div style="font-size:0.5rem;color:var(--muted)">ج.م</div>
+        </div>
+        <div style="background:rgba(124,107,255,0.08);border:1px solid rgba(124,107,255,0.2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:0.55rem;color:var(--muted);margin-bottom:3px">متوسط شهري متوقع</div>
+          <div style="font-size:1rem;font-weight:900;color:var(--accent2)">${fmt(avgForecast)}</div>
+          <div style="font-size:0.5rem;color:var(--muted)">ج.م</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:6px">
+        ${forecastData.map((m,i)=>{
+          const barPct=Math.round((m.expected/maxForecast)*100);
+          const dropPct=i>0?Math.round(((forecastData[0].expected-m.expected)/(forecastData[0].expected||1))*100):0;
+          const clr=dropPct>20?'var(--orange)':'var(--green)';
+          return `<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:8px;text-align:center">
+            <div style="font-size:0.5rem;color:var(--muted);margin-bottom:4px">${m.label}</div>
+            <div style="font-size:0.82rem;font-weight:900;color:${clr}">${fmt(m.expected)}</div>
+            <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin:5px 0">
+              <div style="height:100%;width:${barPct}%;background:${clr};border-radius:3px"></div>
             </div>
-            ${m.isApprox?`<div style="font-size:0.4rem;color:var(--orange);margin-top:2px">تقريبي</div>`:''}
-          </div>`).join('')}
+            <div style="font-size:0.48rem;color:var(--muted)">${m.customerCount} عميل</div>
+            ${dropPct>0?`<div style="font-size:0.45rem;color:var(--orange);margin-top:1px">▼ ${dropPct}% انخفاض</div>`:''}
+          </div>`}).join('')}
       </div>
-      <div style="font-size:0.52rem;color:var(--muted);text-align:center;margin-top:8px">
-        <i class="fa-solid fa-circle-info"></i> مبني على معدل التحصيل التاريخي · أكتر من 6 شهور تقريبي ⚠️
+      <div style="font-size:0.52rem;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6">
+        <i class="fa-solid fa-circle-info"></i> مبني على الأقساط الفعلية للعملاء الحاليين · الانخفاض طبيعي بسبب انتهاء عقود
       </div>
-    </div>
+    </div>`; })()}
 
     <!-- ═══ توزيع العملاء + ربحية المحفظة ═══ -->
     <div class="charts-grid" style="margin-bottom:12px">
@@ -5709,7 +5953,7 @@ function logActivity(type, data = {}) {
 }
 
 function openActivityLog() {
-  if(!currentUser.isAdmin) { showToast('المدير فقط', 'error', 'fa-lock'); return; }
+  if(!currentUser.isAdmin && !hasPermission('viewUpdates')) { showToast('ليس لديك صلاحية لعرض السجلات', 'error', 'fa-lock'); return; }
   window._actTab = 'staff';
   document.getElementById('act-search').value = '';
   document.getElementById('activity-list').innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>';
@@ -6004,6 +6248,7 @@ async function saveStoreProducts(products) {
 }
 
 window.openStoreManager = async function() {
+  if(!currentUser.isAdmin && !hasPermission('editStore')) { showToast('ليس لديك صلاحية لإدارة المتجر', 'error', 'fa-lock'); return; }
   openM('store-manager-modal');
   document.getElementById('store-admin-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:0.8rem">⏳ جاري التحميل...</div>';
   cancelProductForm();
@@ -6635,61 +6880,69 @@ async function shareCustomerPDF(c, paid, itc, due) {
 
   let rowsHTML = payments.length
     ? payments.map((p,i) => `<tr style="background:${i%2===0?'#f8f6ff':'#fff'}">
-        <td style="font-weight:700;color:#7c6bff">${payments.length-i}</td>
-        <td>${p.date||'-'}</td>
-        <td style="color:#16a34a;font-weight:700">${(p.amount||0).toLocaleString()} ج.م</td>
-        <td style="font-size:10px;color:#7c6bff;font-weight:700">${p.ref ? '#'+p.ref : '-'}</td>
+        <td style="font-weight:700;color:#7c6bff;font-family:Arial,sans-serif">${payments.length-i}</td>
+        <td style="font-family:Arial,sans-serif">${p.date||'-'}</td>
+        <td style="color:#16a34a;font-weight:700;font-family:Arial,sans-serif">${Number(p.amount||0).toLocaleString('en-US')}</td>
+        <td style="font-size:10px;color:#7c6bff;font-weight:700;font-family:Arial,sans-serif">${p.ref ? '#'+p.ref : '-'}</td>
         <td style="color:#666">${p.note||'-'}</td></tr>`).join('')
     : `<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">لا توجد دفعات مسجلة</td></tr>`;
-  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>
+  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+  <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#fff;color:#1e1428;direction:rtl}
-    .hdr{background:linear-gradient(135deg,#1e1428,#3b1f6e);color:#fff;padding:22px 26px;display:flex;justify-content:space-between;align-items:center}
-    .hdr-brand{font-size:20px;font-weight:900;letter-spacing:2px}.hdr-sub{font-size:10px;opacity:.7;margin-top:3px}
-    .hdr-date{font-size:10px;opacity:.8;text-align:left}
-    .body{padding:20px 26px}
-    .info{background:#f5f3ff;border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid #e0d9ff}
+    html,body{font-size:16px}
+    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#fff;color:#1e1428;direction:rtl;-webkit-text-size-adjust:100%}
+    .hdr{background:linear-gradient(135deg,#1e1428,#3b1f6e);color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+    .hdr-brand{font-size:18px;font-weight:900;letter-spacing:1px}.hdr-sub{font-size:10px;opacity:.7;margin-top:2px}
+    .hdr-date{font-size:10px;opacity:.8;font-family:Arial,sans-serif}
+    .body{padding:14px 16px}
+    .info{background:#f5f3ff;border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #e0d9ff}
     .info-name{font-size:16px;font-weight:900}.info-sub{font-size:11px;color:#777;margin-top:3px}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
     .stat{border-radius:8px;padding:10px;text-align:center}
-    .stat-val{font-size:13px;font-weight:900}.stat-lbl{font-size:9px;margin-top:3px;opacity:.85}
-    .prog-wrap{margin-bottom:16px}.prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:#777;margin-bottom:5px}
+    .stat-val{font-size:15px;font-weight:900;font-family:Arial,sans-serif}
+    .stat-lbl{font-size:9px;margin-top:3px;opacity:.85}
+    .prog-wrap{margin-bottom:14px}.prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:#777;margin-bottom:5px}
     .prog-bar{height:7px;background:#e8e3ff;border-radius:10px;overflow:hidden}
     .prog-fill{height:100%;background:linear-gradient(90deg,#7c6bff,#a78bfa);width:${pct}%}
     .sec-title{font-size:12px;font-weight:900;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e8e3ff}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    th{background:#1e1428;color:#fff;padding:8px 10px;font-weight:700;font-size:10px}
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid #ede8ff}
+    table{width:100%;border-collapse:collapse;font-size:11px;min-width:300px}
+    th{background:#1e1428;color:#fff;padding:8px 10px;font-weight:700;font-size:10px;white-space:nowrap}
     td{padding:7px 10px;border-bottom:1px solid #f0edff}
-    .ftr{background:#1e1428;color:#a89dd4;text-align:center;padding:10px;font-size:10px;margin-top:20px}
+    .ftr{background:#1e1428;color:#a89dd4;text-align:center;padding:10px;font-size:10px;margin-top:16px;font-family:Arial,sans-serif}
+    @media(max-width:480px){.hdr{padding:14px 16px}}
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body>
   <div class="hdr">
     <div><div class="hdr-brand">OPERA STORE</div><div class="hdr-sub">كشف حساب عميل</div></div>
-    <div class="hdr-date">تاريخ الإصدار<br>${d}</div>
+    <div class="hdr-date">${d}</div>
   </div>
   <div class="body">
     <div class="info">
       <div class="info-name">${c.name||''}</div>
-      <div class="info-sub">📦 ${c.prod||'-'} &nbsp;|&nbsp; 📞 ${c.phone||'-'}</div>
-      <div class="info-sub" style="margin-top:4px">🔖 كود العميل: <b style="color:#7c6bff">${c.custCode||c.id||'-'}</b></div>
+      <div class="info-sub">📦 ${c.prod||'-'} &nbsp;|&nbsp; 📞 <span style="font-family:Arial,sans-serif">${c.phone||'-'}</span></div>
+      <div class="info-sub" style="margin-top:4px">🔖 ID: <b style="color:#7c6bff;font-family:Arial,sans-serif">${c.custCode||c.id||'-'}</b></div>
     </div>
     <div class="stats">
-      <div class="stat" style="background:#f0fdf4;color:#15803d"><div class="stat-val">${itc.toLocaleString()} ج.م</div><div class="stat-lbl">إجمالي العقد</div></div>
-      <div class="stat" style="background:#eff6ff;color:#1d4ed8"><div class="stat-val">${paid.toLocaleString()} ج.م</div><div class="stat-lbl">إجمالي المدفوع</div></div>
-      <div class="stat" style="background:#fff7ed;color:#c2410c"><div class="stat-val">${(itc-paid).toLocaleString()} ج.م</div><div class="stat-lbl">المتبقي</div></div>
-      <div class="stat" style="background:#fef2f2;color:#dc2626"><div class="stat-val">${due.toLocaleString()} ج.م</div><div class="stat-lbl">المطلوب الآن</div></div>
+      <div class="stat" style="background:#f0fdf4;color:#15803d"><div class="stat-val">${Number(itc).toLocaleString('en-US')}</div><div class="stat-lbl">إجمالي العقد</div></div>
+      <div class="stat" style="background:#eff6ff;color:#1d4ed8"><div class="stat-val">${Number(paid).toLocaleString('en-US')}</div><div class="stat-lbl">إجمالي المدفوع</div></div>
+      <div class="stat" style="background:#fff7ed;color:#c2410c"><div class="stat-val">${Number(itc-paid).toLocaleString('en-US')}</div><div class="stat-lbl">المتبقي</div></div>
+      <div class="stat" style="background:#fef2f2;color:#dc2626"><div class="stat-val">${Number(due).toLocaleString('en-US')}</div><div class="stat-lbl">المطلوب الآن</div></div>
     </div>
     <div class="prog-wrap">
-      <div class="prog-lbl"><span>نسبة السداد</span><span>${pct}%</span></div>
+      <div class="prog-lbl"><span>نسبة السداد</span><span style="font-family:Arial,sans-serif">${pct}%</span></div>
       <div class="prog-bar"><div class="prog-fill"></div></div>
     </div>
     <div class="sec-title">سجل المعاملات</div>
+    <div class="tbl-wrap">
     <table>
       <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>رقم العملية</th><th>ملاحظة</th></tr></thead>
       <tbody>${rowsHTML}</tbody>
     </table>
+    </div>
   </div>
-  <div class="ftr">OPERA STORE &nbsp;|&nbsp; 01009144655 &nbsp;|&nbsp; 01500041020</div>
+  <div class="ftr">OPERA STORE | 01009144655 | 01500041020</div>
   </body></html>`;
 
   // موبايل → Share API مباشرة
@@ -6771,11 +7024,23 @@ function icSaveSettings() {
       <textarea id="tpl-alert" rows="5" style="width:100%;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none;resize:vertical;line-height:1.7"></textarea>
     </div>
 
-    <div style="margin-bottom:16px">
-      <label style="font-size:0.75rem;font-weight:700;color:var(--text);display:block;margin-bottom:4px"><i class="fa-solid fa-receipt" style="color:var(--green)"></i> إيصال المعاملات (تقرير حساب العميل)</label>
+
+    <div style="margin-bottom:20px">
+      <label style="font-size:0.75rem;font-weight:700;color:var(--text);display:block;margin-bottom:4px"><i class="fa-solid fa-receipt" style="color:var(--green)"></i> إيصال الدفعة</label>
       <div style="font-size:0.63rem;color:var(--muted);margin-bottom:6px">المتغيرات: {{اسم_العميل}} {{المنتج}} {{سجل_الدفعات}} {{إجمالي_مدفوع}} {{إجمالي_متبقي}} {{المطلوب}}</div>
-      <textarea id="tpl-receipt" rows="6" style="width:100%;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none;resize:vertical;line-height:1.7"></textarea>
-      <div style="font-size:0.6rem;color:var(--accent2);margin-top:5px">⚠️ هذا القالب خاص برسالة الواتساب فقط — تقرير PDF له تصميم مستقل</div>
+      <div style="font-size:0.58rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;margin-bottom:6px;line-height:1.9;direction:rtl">
+        <b style="color:var(--accent2)">مثال على الإيصال:</b><br>
+        العميل: احمد محمد خليفه<br>
+        المنتج: (Infinix Note 50s 256/8)<br>
+        ------<br>
+        سجل المعاملات:<br>
+        02/05/2026 &nbsp; 3,000 ج.م (#27775)<br>
+        ------<br>
+        إجمالي المدفوع: 4,500 ج.م<br>
+        إجمالي المتبقي: 13,440 ج.م<br>
+        المطلوب: 13,440 ج.م
+      </div>
+      <textarea id="tpl-receipt" rows="8" style="width:100%;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.82rem;outline:none;resize:vertical;line-height:1.8;direction:rtl"></textarea>
     </div>
 
     <div style="display:flex;gap:8px">
@@ -6786,13 +7051,368 @@ function icSaveSettings() {
 </div>
 
 <script>
+// ===== INVESTORS MODULE =====
+let investors = window._fbInvestors || JSON.parse(localStorage.getItem('investors_v1_data')) || [];
+let activeInvestorId = null;
+
+function saveInvestors() {
+  localStorage.setItem('investors_v1_data', JSON.stringify(investors));
+  if(window.fbSave) window.fbSave('investors', investors);
+}
+
+// تحميل من Firebase عند الأول
+if(window.fbLoad) {
+  window.fbLoad('investors', 'investors_v1_data').then(data => {
+    if(data) { investors = data; localStorage.setItem('investors_v1_data', JSON.stringify(data)); }
+  }).catch(()=>{});
+}
+
+// ─── تعبئة قائمة المستثمرين في فورم إضافة عميل ───
+function populateInvestorSelect() {
+  const sel = document.getElementById('cust-investor-id');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— بدون مستثمر —</option>';
+  investors.forEach(inv => {
+    const opt = document.createElement('option');
+    opt.value = inv.id;
+    opt.textContent = inv.name + ' (' + fmt(inv.capital) + ' ج.م)';
+    sel.appendChild(opt);
+  });
+  sel.value = cur;
+}
+
+// ─── حساب ما تم تحصيله من رأس مال مستثمر معين ───
+function calcInvestorStats(inv) {
+  // نجيب كل العملاء المرتبطين بهذا المستثمر
+  const linked = customers.filter(c => c.investorId === inv.id && !c.archived);
+  const archivedLinked = customers.filter(c => c.investorId === inv.id && c.archived);
+  const allLinked = [...linked, ...archivedLinked];
+
+  // إجمالي المبالغ المحصلة من العملاء
+  let totalCollected = 0;
+  allLinked.forEach(c => {
+    const paid = c.payments.reduce((s,p) => s + p.amount, 0);
+    totalCollected += paid + (c.down || 0); // المقدم + الأقساط
+  });
+
+  // إجمالي التكلفة (رأس المال المستخدم في هؤلاء العملاء)
+  let totalCost = 0;
+  allLinked.forEach(c => { totalCost += (c.buy || 0); });
+
+  // الربح الإجمالي = المحصّل - التكلفة
+  const grossProfit = Math.max(0, totalCollected - totalCost);
+
+  // ما يخص المستثمر من الربح (بناءً على نسبته)
+  const pct = (inv.profitPct || 40) / 100;
+  const investorProfitShare = Math.round(grossProfit * pct);
+
+  // الأرباح الموزعة يدوياً على المستثمر
+  const manualProfitDistributed = (inv.ops || [])
+    .filter(o => o.type === 'profit')
+    .reduce((s,o) => s + o.amount, 0);
+
+  // ما تم استرداده من رأس المال = مدفوعات عملاء - الأرباح - التكلفة الأصلية
+  // نقدر نبسطها: من كل جنيه محصّل: جزء رأس مال + جزء ربح
+  // الأحسب = totalCollected من عملائه — لكن نقسم:
+  //   رأس المال المسترد = min(totalCollected الصافي, رأس المال)
+  const netCollected = Math.min(totalCollected, inv.capital); // حد رأس المال
+  const capitalRecovered = netCollected;
+  const capitalRecoveryPct = inv.capital > 0 ? Math.min(100, Math.round((capitalRecovered / inv.capital) * 100)) : 0;
+
+  return {
+    linked: allLinked,
+    activeLinked: linked,
+    totalCollected,
+    totalCost,
+    grossProfit,
+    investorProfitShare,
+    manualProfitDistributed,
+    capitalRecovered,
+    capitalRecoveryPct
+  };
+}
+
+// ─── فتح قائمة المستثمرين ───
+function openInvestorsModal() {
+  renderInvestorsList();
+  const badge = document.getElementById('investor-badge');
+  if(badge) badge.textContent = investors.length || '';
+  populateInvestorSelect();
+  openM('investors-modal');
+}
+window.openInvestorsModal = openInvestorsModal;
+
+// ─── رسم قائمة المستثمرين ───
+function renderInvestorsList() {
+  const el = document.getElementById('investors-list-content');
+  if(!el) return;
+  el.innerHTML = '';
+
+  if(!investors.length) {
+    el.innerHTML = '<div class="empty"><i class="fa-solid fa-hand-holding-dollar"></i><p>لا يوجد مستثمرون بعد</p></div>';
+    document.getElementById('inv-total-capital').textContent = '0';
+    document.getElementById('inv-total-profit').textContent = '0';
+    return;
+  }
+
+  let sumCapital = 0, sumProfit = 0;
+  investors.forEach(inv => {
+    const stats = calcInvestorStats(inv);
+    sumCapital += inv.capital;
+    sumProfit  += stats.manualProfitDistributed;
+
+    const card = document.createElement('div');
+    card.className = 'sav-card';
+    card.style.cssText = 'cursor:pointer;margin-bottom:10px';
+    card.innerHTML = `
+      <div class="sav-icon" style="background:rgba(52,211,153,0.15)">
+        <i class="fa-solid fa-hand-holding-dollar" style="color:var(--green)"></i>
+      </div>
+      <div class="sav-info">
+        <div class="sav-name">${inv.name}</div>
+        <div class="sav-meta">${stats.activeLinked.length} عميل نشط · ${inv.profitPct||40}% ربح</div>
+        <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:5px;max-width:120px">
+          <div style="height:100%;width:${stats.capitalRecoveryPct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:3px"></div>
+        </div>
+        <div style="font-size:0.48rem;color:var(--muted);margin-top:2px">${stats.capitalRecoveryPct}% استرداد رأس المال</div>
+      </div>
+      <div class="sav-balance">
+        <div class="val" style="color:var(--green);font-size:0.9rem">${fmt(inv.capital)}</div>
+        <div class="lbl">ج.م</div>
+      </div>
+    `;
+    card.onclick = () => openInvestorDetail(inv.id);
+    el.appendChild(card);
+  });
+
+  document.getElementById('inv-total-capital').textContent = fmt(sumCapital);
+  document.getElementById('inv-total-profit').textContent  = fmt(sumProfit);
+}
+
+// ─── إضافة مستثمر جديد ───
+function addInvestor() {
+  const name = document.getElementById('inv-name').value.trim();
+  const capital = parseFloat(document.getElementById('inv-capital').value) || 0;
+  if(!name || !capital) { showToast('برجاء إدخال الاسم ورأس المال','error','fa-exclamation-circle'); return; }
+  const inv = {
+    id: Date.now(),
+    name,
+    phone: document.getElementById('inv-phone').value.trim(),
+    capital,
+    profitPct: parseFloat(document.getElementById('inv-profit-pct').value) || 40,
+    startDate: document.getElementById('inv-start-date').value || new Date().toISOString().split('T')[0],
+    notes: document.getElementById('inv-notes').value.trim(),
+    ops: []
+  };
+  investors.push(inv);
+  saveInvestors();
+  populateInvestorSelect();
+  ['inv-name','inv-phone','inv-capital','inv-profit-pct','inv-start-date','inv-notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = id === 'inv-profit-pct' ? '40' : '';
+  });
+  closeM('add-investor-modal');
+  renderInvestorsList();
+  logEdit('إضافة مستثمر', inv.name, fmt(inv.capital) + ' ج.م');
+  showToast('تم إضافة المستثمر بنجاح ✅');
+}
+window.addInvestor = addInvestor;
+
+// ─── فتح تفاصيل مستثمر ───
+function openInvestorDetail(id) {
+  const inv = investors.find(x => x.id === id);
+  if(!inv) return;
+  activeInvestorId = id;
+  const stats = calcInvestorStats(inv);
+
+  document.getElementById('inv-detail-name').textContent = '💼 ' + inv.name;
+  document.getElementById('inv-d-capital').textContent   = fmt(inv.capital) + ' ج.م';
+  document.getElementById('inv-d-pct').textContent       = (inv.profitPct||40) + '%';
+  document.getElementById('inv-d-collected').textContent = fmt(stats.capitalRecovered) + ' ج.م';
+  document.getElementById('inv-d-profit').textContent    = fmt(stats.manualProfitDistributed) + ' ج.م';
+  document.getElementById('inv-d-bar').style.width       = stats.capitalRecoveryPct + '%';
+  document.getElementById('inv-d-pct-bar').textContent   = stats.capitalRecoveryPct + '%';
+
+  // العملاء المرتبطين
+  const linkedEl = document.getElementById('inv-linked-customers');
+  if(stats.linked.length) {
+    linkedEl.innerHTML = stats.linked.map(c => {
+      const paid = c.payments.reduce((s,p) => s + p.amount, 0) + (c.down||0);
+      const rem  = (c.total - c.down - (c.earlyDiscount||0)) - c.payments.reduce((s,p)=>s+p.amount,0);
+      const pct  = c.total > 0 ? Math.round((paid/(c.total))*100) : 0;
+      const cost = c.buy || 0;
+      const profit = Math.max(0, paid - cost);
+      const invProfit = Math.round(profit * ((inv.profitPct||40)/100));
+      return `
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;cursor:pointer" onclick="openCustomer(${c.id})">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text)">${c.name}</div>
+            <div style="font-size:0.6rem;color:${rem<=0?'var(--green)':'var(--muted)'}">
+              ${rem<=0?'✅ منتهي':'متبقي ' + fmt(rem) + ' ج.م'}
+            </div>
+          </div>
+          <div style="font-size:0.6rem;color:var(--muted);margin-bottom:6px">
+            📦 ${c.prod||'--'} · كود: <b style="color:var(--accent2)">${c.custCode||'--'}</b>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center">
+            <div style="background:rgba(59,130,246,0.08);border-radius:6px;padding:5px">
+              <div style="font-size:0.65rem;font-weight:800;color:var(--blue)">${fmt(paid)}</div>
+              <div style="font-size:0.48rem;color:var(--muted)">محصّل</div>
+            </div>
+            <div style="background:rgba(52,211,153,0.08);border-radius:6px;padding:5px">
+              <div style="font-size:0.65rem;font-weight:800;color:var(--green)">${fmt(invProfit)}</div>
+              <div style="font-size:0.48rem;color:var(--muted)">ربحك ${inv.profitPct||40}%</div>
+            </div>
+            <div style="background:rgba(124,107,255,0.08);border-radius:6px;padding:5px">
+              <div style="font-size:0.65rem;font-weight:800;color:var(--accent2)">${pct}%</div>
+              <div style="font-size:0.48rem;color:var(--muted)">سداد</div>
+            </div>
+          </div>
+          <div style="height:3px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:6px">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px"></div>
+          </div>
+        </div>`;
+    }).join('');
+  } else {
+    linkedEl.innerHTML = '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:10px">لا يوجد عملاء مرتبطين بعد</div>';
+  }
+
+  // سجل العمليات
+  const opsEl = document.getElementById('inv-ops-history');
+  if(inv.ops && inv.ops.length) {
+    opsEl.innerHTML = [...inv.ops].reverse().map(o => `
+      <div class="pay-row">
+        <div style="font-weight:700;color:${o.type==='profit'?'var(--green)':'var(--muted)'}">
+          ${o.type==='profit'?'💰 ربح موزع':'📌'} ${fmt(o.amount)} ج.م
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted)">${o.note||'--'}</div>
+        <div style="font-size:0.65rem;color:var(--muted)">${o.date}</div>
+      </div>`).join('');
+  } else {
+    opsEl.innerHTML = '<div class="empty" style="padding:16px"><p>لا توجد عمليات مسجلة</p></div>';
+  }
+
+  closeM('investors-modal');
+  openM('investor-detail-modal');
+}
+window.openInvestorDetail = openInvestorDetail;
+
+// ─── تسجيل توزيع ربح يدوي ───
+function addInvestorProfit() {
+  const inv = investors.find(x => x.id === activeInvestorId);
+  if(!inv) return;
+  const amt = parseFloat(document.getElementById('inv-profit-amount').value);
+  if(!amt || amt <= 0) { showToast('برجاء إدخال مبلغ صحيح','error','fa-exclamation-circle'); return; }
+  inv.ops = inv.ops || [];
+  inv.ops.push({
+    type: 'profit',
+    amount: amt,
+    note: document.getElementById('inv-profit-note').value.trim(),
+    date: fmtDate(new Date())
+  });
+  saveInvestors();
+  document.getElementById('inv-profit-amount').value = '';
+  document.getElementById('inv-profit-note').value   = '';
+  openInvestorDetail(activeInvestorId);
+  logEdit('توزيع ربح مستثمر', inv.name, fmt(amt) + ' ج.م');
+  showToast('✅ تم تسجيل توزيع الربح');
+}
+window.addInvestorProfit = addInvestorProfit;
+
+// ─── إرسال تقرير واتساب للمستثمر ───
+function sendInvestorWA() {
+  const inv = investors.find(x => x.id === activeInvestorId);
+  if(!inv) return;
+  if(!inv.phone) { showToast('المستثمر ليس لديه رقم تليفون', 'error', 'fa-phone'); return; }
+  const stats = calcInvestorStats(inv);
+  const today = fmtDate(new Date());
+  let custLines = stats.linked.map(c => {
+    const paid = c.payments.reduce((s,p)=>s+p.amount,0)+(c.down||0);
+    const rem  = (c.total-c.down-(c.earlyDiscount||0))-c.payments.reduce((s,p)=>s+p.amount,0);
+    const profit = Math.max(0, paid-(c.buy||0));
+    const invP = Math.round(profit*((inv.profitPct||40)/100));
+    return `• ${c.name} | ${c.prod||'--'}%0Aمحصّل: ${fmt(paid)} | ربحك: ${fmt(invP)} | ${rem<=0?'منتهي ✅':'متبقي '+fmt(rem)}`;
+  }).join('%0A%0A');
+
+  const msg = `━━━━━━━━━━━━━━━━━━━━━%0A💼 تقرير مضاربة — OPERA STORE%0A📅 ${today}%0A━━━━━━━━━━━━━━━━━━━━━%0A👤 المستثمر: ${inv.name}%0A💰 رأس المال: ${fmt(inv.capital)} ج.م%0A📊 نسبة الربح: ${inv.profitPct||40}%%0A%0A━━━━━━━━━━━━━━━━━━━━━%0A👥 العملاء الممولون (${stats.linked.length})%0A━━━━━━━━━━━━━━━━━━━━━%0A${custLines}%0A%0A━━━━━━━━━━━━━━━━━━━━━%0A📈 إجمالي محصّل: ${fmt(stats.totalCollected)} ج.م%0A💵 ربحك المقدر: ${fmt(stats.investorProfitShare)} ج.م%0A✅ أرباح موزعة: ${fmt(stats.manualProfitDistributed)} ج.م%0A━━━━━━━━━━━━━━━━━━━━━`;
+  window.open(`https://wa.me/2${inv.phone}?text=${msg}`, '_blank');
+}
+window.sendInvestorWA = sendInvestorWA;
+
+// ─── طباعة عقد المضاربة ───
+function printInvestorContract() {
+  const inv = investors.find(x => x.id === activeInvestorId);
+  if(!inv) return;
+  const today = fmtDate(new Date());
+  const contractHTML = `
+    <div style="text-align:center;margin-bottom:20px">
+      <h2 style="color:#0b5e3c;margin-bottom:4px">عقد مضاربة شرعية</h2>
+      <p style="color:#4b5563;font-size:0.85rem">(استثمار عن طريق المرابحة في الأجهزة والمنتجات)</p>
+    </div>
+    <p>بسم الله الرحمن الرحيم</p>
+    <p>تم الاتفاق بعون الله وتوفيقه بين كل من:</p>
+    <p><strong>صاحب رأس المال (المستثمر):</strong> <u>${inv.name}</u></p>
+    <p><strong>المضارب (صاحب العمل):</strong> <u>OPERA STORE</u></p>
+    <p><strong>رأس مال المضاربة:</strong> مبلغ وقدره <u>${fmt(inv.capital)} جنيهاً مصرياً</u>، دفعه صاحب المال للمضارب نقداً ليعمل به في تجارة الأجهزة والمنتجات بنظام المرابحة الشرعية.</p>
+    <p><strong>تاريخ العقد:</strong> ${inv.startDate || today}</p>
+    <hr style="border:1px dashed #9ca3af;margin:14px 0">
+    <p><strong>بنود العقد:</strong></p>
+    <ol style="padding-right:20px;line-height:2">
+      <li><strong>طبيعة العقد:</strong> مضاربة شرعية مطلقة، يتصرف المضارب برأس المال في شراء الأجهزة والمنتجات الحلال وبيعها بالتقسيط (المرابحة).</li>
+      <li><strong>توزيع الأرباح:</strong>
+        <ul>
+          <li>للمستثمر (صاحب المال): <strong>${inv.profitPct||40}%</strong> من صافي الأرباح.</li>
+          <li>للمضارب (صاحب العمل): <strong>${100-(inv.profitPct||40)}%</strong> من صافي الأرباح.</li>
+        </ul>
+      </li>
+      <li><strong>مدة المضاربة:</strong> 12 شهراً تبدأ من ${inv.startDate || today}، قابلة للتجديد بالتراضي.</li>
+      <li><strong>التصفية والحساب الختامي:</strong> يقوم المضارب بتزويد المستثمر بكشف حساب مبسط في نهاية المدة أو عند الطلب.</li>
+      <li><strong>مسؤولية الخسارة:</strong> إذا تحققت خسارة دون تعدٍّ أو تفريط، فالخسارة على رأس مال المستثمر، ويخسر المضارب جهده فقط.</li>
+      <li><strong>حسن النية:</strong> لا يُعد المضارب ضامناً لرأس المال إلا في حالات التعدي أو التقصير.</li>
+    </ol>
+    <p style="margin-top:16px">والله على ما نقول وكيل.</p>
+    <table style="width:100%;text-align:center;margin-top:30px;border-collapse:collapse">
+      <tr>
+        <td style="padding:10px"><strong>المستثمر</strong></td>
+        <td style="padding:10px"><strong>المضارب</strong></td>
+      </tr>
+      <tr>
+        <td style="padding-top:30px;border-top:1px solid #ccc">${inv.name}</td>
+        <td style="padding-top:30px;border-top:1px solid #ccc">OPERA STORE</td>
+      </tr>
+      <tr>
+        <td style="font-size:0.75rem;color:#777">التوقيع</td>
+        <td style="font-size:0.75rem;color:#777">التوقيع</td>
+      </tr>
+    </table>
+    ${inv.notes ? `<p style="margin-top:14px;font-size:0.8rem;color:#555">📝 ملاحظات: ${inv.notes}</p>` : ''}
+  `;
+  document.getElementById('inv-contract-content').innerHTML = contractHTML;
+  closeM('investor-detail-modal');
+  openM('investor-contract-modal');
+}
+window.printInvestorContract = printInvestorContract;
+
+// ─── تحميل قائمة المستثمرين من Firebase عند البدء ───
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    populateInvestorSelect();
+    if(window.fbLoad) {
+      window.fbLoad('investors', 'investors_v1_data').then(data => {
+        if(data) { investors = data; localStorage.setItem('investors_v1_data', JSON.stringify(data)); }
+        populateInvestorSelect();
+      }).catch(()=>{});
+    }
+  }, 1500);
+});
+
 // ===== MSG TEMPLATES =====
 const TPL_KEY = 'opera_msg_templates';
 
 const TPL_DEFAULTS = {
   remind:    `العميل: {{اسم_العميل}}،\nنود تذكيركم بمبلغ {{المبلغ}} ج.م\nمستحق عن ({{عدد_الأقساط}}) قسط متأخر.\nيرجى السداد في أقرب وقت.`,
   alert:     `العميل: {{اسم_العميل}}\nتنبيه بموعد القسط القادم لـ ({{المنتج}})\nبتاريخ {{تاريخ_القسط}} (متبقي {{أيام_متبقية}} يومًا)\nقيمة القسط: {{قيمة_القسط}} ج.م\nومتأخرات سابقة: {{متأخرات}} ج.م`,
-  receipt:   `تقرير حساب العميل\nالعميل: {{اسم_العميل}}\nالمنتج: ({{المنتج}})\n------\nسجل المعاملات:\n{{سجل_الدفعات}}------\nإجمالي المدفوع: {{إجمالي_مدفوع}} ج.م\nإجمالي المتبقي: {{إجمالي_متبقي}} ج.م\nالمطلوب: {{المطلوب}} ج.م`,
+  receipt:   `العميل: {{اسم_العميل}}\nالمنتج: ({{المنتج}})\n------\nسجل المعاملات:\n{{سجل_الدفعات}}------\nإجمالي المدفوع: {{إجمالي_مدفوع}} ج.م\nإجمالي المتبقي: {{إجمالي_متبقي}} ج.م\nالمطلوب: {{المطلوب}} ج.م`,
   dashboard: `━━━━━━━━━━━━━━━━━━━━━\n📊 تقرير التحليلات — OPERA STORE\n📅 {{تاريخ}}\n━━━━━━━━━━━━━━━━━━━━━\n👥 إجمالي العملاء النشطين: {{إجمالي_عملاء}}\n🔴 المتأخرون: {{متأخرون}} عميل\n💰 إجمالي المحفظة: {{إجمالي_محفظة}} ج.م\n✅ إجمالي المحصّل: {{إجمالي_محصل}} ج.م\n📈 نسبة التحصيل الكلية: {{نسبة_تحصيل}}%\n━━━━━━━━━━━━━━━━━━━━━\n🗓 محصّل هذا الشهر: {{محصل_الشهر}} ج.م\n⚠️ إجمالي المتأخرات: {{إجمالي_متأخرات}} ج.م\n━━━━━━━━━━━━━━━━━━━━━`
 };
 
@@ -6802,10 +7422,20 @@ function getMsgTemplates() {
 window.getMsgTemplates = getMsgTemplates;
 
 function openMsgTemplates() {
-  const tpl = getMsgTemplates();
-  document.getElementById('tpl-remind').value  = tpl.remind;
-  document.getElementById('tpl-alert').value   = tpl.alert;
-  document.getElementById('tpl-receipt').value = tpl.receipt;
+  const showTemplates = () => {
+    const tpl = getMsgTemplates();
+    document.getElementById('tpl-remind').value  = tpl.remind  || TPL_DEFAULTS.remind;
+    document.getElementById('tpl-alert').value   = tpl.alert   || TPL_DEFAULTS.alert;
+    document.getElementById('tpl-receipt').value = tpl.receipt || TPL_DEFAULTS.receipt;
+  };
+  if(window.fbLoad) {
+    window.fbLoad('msg_templates', TPL_KEY).then(data => {
+      if(data) localStorage.setItem(TPL_KEY, JSON.stringify(Object.assign({}, TPL_DEFAULTS, data)));
+      showTemplates();
+    }).catch(() => showTemplates());
+  } else {
+    showTemplates();
+  }
   openM('msg-templates-modal');
 }
 
@@ -6825,8 +7455,9 @@ function saveMsgTemplates() {
 function resetMsgTemplates() {
   if(!confirm('إعادة تعيين الرسائل للنصوص الافتراضية؟')) return;
   localStorage.removeItem(TPL_KEY);
-  document.getElementById('tpl-remind').value = TPL_DEFAULTS.remind;
-  document.getElementById('tpl-alert').value  = TPL_DEFAULTS.alert;
+  document.getElementById('tpl-remind').value  = TPL_DEFAULTS.remind;
+  document.getElementById('tpl-alert').value   = TPL_DEFAULTS.alert;
+  document.getElementById('tpl-receipt').value = TPL_DEFAULTS.receipt;
   showToast('تم الإعادة للافتراضي', 'info');
 }
 
