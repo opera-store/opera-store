@@ -1341,28 +1341,36 @@ input, textarea, select { font-size: 0.88rem !important; }
         </button>
       </div>
 
-      <!-- فورم إضافة جهاز مخفي -->
+      <!-- فورم اختيار عميل -->
       <div id="add-device-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <label style="font-size:0.6rem;color:var(--muted);display:block;margin-bottom:3px">اسم المنتج</label>
-            <input type="text" id="dev-name" placeholder="مثال: iPhone 15 Pro" style="width:100%;padding:7px 9px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.75rem;outline:none">
-          </div>
-          <div>
-            <label style="font-size:0.6rem;color:var(--muted);display:block;margin-bottom:3px">تكلفة الشراء (ج.م)</label>
-            <input type="number" id="dev-cost" placeholder="0" style="width:100%;padding:7px 9px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.75rem;outline:none">
-          </div>
-          <div>
-            <label style="font-size:0.6rem;color:var(--muted);display:block;margin-bottom:3px">إجمالي العقد (ج.م)</label>
-            <input type="number" id="dev-total" placeholder="0" style="width:100%;padding:7px 9px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.75rem;outline:none">
-          </div>
-          <div>
-            <label style="font-size:0.6rem;color:var(--muted);display:block;margin-bottom:3px">تم تحصيله (ج.م)</label>
-            <input type="number" id="dev-collected" placeholder="0" style="width:100%;padding:7px 9px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.75rem;outline:none">
+        <div style="font-size:0.62rem;color:var(--muted);margin-bottom:8px">اختر عميل لربطه بهذا المستثمر — البيانات بتتجلب تلقائياً</div>
+        <select id="dev-cust-select" onchange="previewDeviceCustomer()" style="width:100%;padding:9px 12px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'Cairo',sans-serif;font-size:0.78rem;outline:none;margin-bottom:10px">
+          <option value="">— اختر عميل —</option>
+        </select>
+        <!-- معاينة بيانات العميل -->
+        <div id="dev-preview" style="display:none;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:10px">
+          <div style="font-size:0.65rem;font-weight:800;color:var(--text);margin-bottom:6px" id="dev-prev-name"></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;text-align:center">
+            <div style="background:rgba(124,107,255,0.08);border-radius:6px;padding:6px">
+              <div style="font-size:0.7rem;font-weight:900;color:var(--accent2);font-family:Arial,sans-serif" id="dev-prev-cost">0</div>
+              <div style="font-size:0.48rem;color:var(--muted)">رأس مالك (تكلفة - مقدم)</div>
+            </div>
+            <div style="background:rgba(59,130,246,0.08);border-radius:6px;padding:6px">
+              <div style="font-size:0.7rem;font-weight:900;color:var(--blue);font-family:Arial,sans-serif" id="dev-prev-total">0</div>
+              <div style="font-size:0.48rem;color:var(--muted)">إجمالي العقد</div>
+            </div>
+            <div style="background:rgba(52,211,153,0.08);border-radius:6px;padding:6px">
+              <div style="font-size:0.7rem;font-weight:900;color:var(--green);font-family:Arial,sans-serif" id="dev-prev-collected">0</div>
+              <div style="font-size:0.48rem;color:var(--muted)">محصّل حتى الآن</div>
+            </div>
+            <div style="background:rgba(251,146,60,0.08);border-radius:6px;padding:6px">
+              <div style="font-size:0.7rem;font-weight:900;color:var(--orange);font-family:Arial,sans-serif" id="dev-prev-rem">0</div>
+              <div style="font-size:0.48rem;color:var(--muted)">المتبقي</div>
+            </div>
           </div>
         </div>
-        <button onclick="addInvestorDevice()" class="btn btn-green" style="width:100%;padding:7px">
-          <i class="fa-solid fa-check"></i> حفظ الجهاز
+        <button onclick="addInvestorDevice()" class="btn btn-green" style="width:100%;padding:8px">
+          <i class="fa-solid fa-link"></i> ربط العميل بالمستثمر
         </button>
       </div>
 
@@ -7153,79 +7161,124 @@ function populateInvestorSelect() {
 
 // ─── حساب إحصائيات المستثمر (بالحساب الشرعي الصحيح للمضاربة) ───
 function calcInvestorStats(inv) {
-  const pct      = (inv.profitPct || 40) / 100;   // نسبة المستثمر
-  const shopPct  = 1 - pct;                        // نسبة المتجر
+  const invPct  = (inv.profitPct || 40) / 100;
+  const capital = inv.capital || 0;
 
-  // ── عملاء مربوطين بالمستثمر ──
-  const activeLinked   = customers.filter(c => c.investorId === inv.id && !c.archived);
-  const archivedLinked = customers.filter(c => c.investorId === inv.id && c.archived);
-  const allLinked      = [...activeLinked, ...archivedLinked];
+  // ══ جمع كل العملاء المرتبطين (مباشر عبر investorId أو عبر devices) ══
+  const directLinked   = customers.filter(c => c.investorId === inv.id);
+  const deviceCustIds  = new Set((inv.devices||[]).map(d=>d.custId).filter(Boolean));
+  // نجمّع الكل بدون تكرار
+  const allCustIds     = new Set([...directLinked.map(c=>c.id), ...deviceCustIds]);
+  const allLinked      = [...allCustIds].map(id => customers.find(c=>c.id===id)).filter(Boolean);
+  const activeLinked   = allLinked.filter(c => !c.archived);
 
-  // ── حساب من العملاء المرتبطين ──
-  let totalCollectedFromCustomers = 0; // إجمالي ما دُفع من العملاء (مقدم + أقساط)
-  let totalContractValue          = 0; // إجمالي قيمة العقود
-  let totalBuyCost                = 0; // إجمالي تكلفة الشراء
-  allLinked.forEach(c => {
-    const paid = c.payments.reduce((s,p) => s + p.amount, 0) + (c.down || 0);
-    totalCollectedFromCustomers += paid;
-    totalContractValue          += (c.total || 0);
-    totalBuyCost                += (c.buy   || 0);
+  // ══ حساب كل عميل على حدة بالمنطق الصح ══
+  // المستثمر موّل: min(تكلفة - مقدم, الرصيد المتاح وقت إضافة الجهاز)
+  // لكن الرصيد المتاح بيُحسب تراكمياً — نحسبه بالترتيب
+  let remainingCapital = capital;  // الرصيد المتاح يبدأ برأس المال كامل
+
+  let totalInvestorCapitalDeployed = 0; // مجموع ما وظّفه المستثمر فعلاً
+  let totalInstallmentsCollected   = 0; // أقساط محصّلة (من فلوس المستثمر فقط، بدون مقدم)
+  let totalContractAll             = 0;
+
+  // ترتيب العملاء بالتاريخ (الأقدم أول — الرصيد بيتوزع بالترتيب)
+  const sortedLinked = [...allLinked].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  const custDetails = sortedLinked.map(c => {
+    const down           = c.down  || 0;
+    const buyCost        = c.buy   || 0;
+    const totalContract  = c.total || 0;
+    const installmentsPaid = c.payments.reduce((s,p) => s+p.amount, 0);
+
+    // ما يحتاجه المستثمر لتمويل هذا الجهاز = تكلفة - مقدم العميل
+    const neededFromInv  = Math.max(0, buyCost - down);
+
+    // ما موّله المستثمر فعلاً = min(المطلوب, رصيده المتاح)
+    const invCapital     = Math.min(neededFromInv, remainingCapital);
+    remainingCapital     = Math.max(0, remainingCapital - invCapital);
+
+    // الأقساط المحصّلة تعود لرأس المال أولاً ثم ربح
+    const capitalReturned = Math.min(installmentsPaid, invCapital);
+    const profitFromCust  = Math.max(0, installmentsPaid - invCapital);
+    const invProfitFromCust = Math.round(profitFromCust * invPct);
+
+    totalInvestorCapitalDeployed += invCapital;
+    totalInstallmentsCollected   += installmentsPaid;
+    totalContractAll             += totalContract;
+
+    return {
+      cust: c, invCapital, neededFromInv, down, buyCost,
+      installmentsPaid, capitalReturned, profitFromCust, invProfitFromCust,
+      rem: Math.max(0, (totalContract - down - (c.earlyDiscount||0)) - installmentsPaid)
+    };
   });
 
-  // ── حساب من الأجهزة اليدوية ──
-  let devCollected = 0, devCost = 0, devTotal = 0;
-  (inv.devices || []).forEach(d => {
-    devCollected += (d.collected || 0);
-    devCost      += (d.cost      || 0);
-    devTotal     += (d.total     || 0);
+  // ══ أجهزة devices بدون custId (يدوية قديمة) ══
+  let devCollectedOld = 0, devCostOld = 0, devTotalOld = 0;
+  (inv.devices||[]).forEach(d => {
+    if(!d.custId) {
+      const invCapOld = Math.min(d.cost||0, remainingCapital);
+      remainingCapital = Math.max(0, remainingCapital - invCapOld);
+      totalInvestorCapitalDeployed += invCapOld;
+      devCostOld      += invCapOld;
+      devTotalOld     += (d.total||0);
+      devCollectedOld += (d.collected||0);
+      totalInstallmentsCollected += (d.collected||0);
+      totalContractAll           += (d.total||0);
+    }
   });
 
-  const totalCollected   = totalCollectedFromCustomers + devCollected;
-  const totalCost        = totalBuyCost + devCost;
-  const totalContractAll = totalContractValue + devTotal;
+  // ══ الأرقام الإجمالية ══
+  const capitalAvailable      = remainingCapital;
+  const totalCollected        = totalInstallmentsCollected + devCollectedOld;
 
-  // ── الربح الفعلي المحقق حتى الآن ──
-  // الربح = ما تم تحصيله - تكلفة الشراء (رأس المال المستخدم فعلاً)
-  const realizedProfit = Math.max(0, totalCollected - totalCost);
+  // ══ حساب الربح الصح: 5% شهرياً على رأس المال الموظَّف لكل عميل ══
+  // الربح الإجمالي للمشروع = رأس المال × 5% × عدد الأشهر
+  // ثم يُقسم: invPct للمستثمر، (1-invPct) للمتجر
+  const MONTHLY_PROFIT_RATE = 0.05; // 5% شهرياً
 
-  // ── نصيب المستثمر من الربح المحقق ──
-  const investorProfitShare = Math.round(realizedProfit * pct);
+  // حساب الربح من العملاء المرتبطين
+  let totalGrossProfit = 0; // الربح الإجمالي للمشروع (قبل التقسيم)
+  custDetails.forEach(cd => {
+    const invCap = cd.invCapital;
+    if(invCap <= 0) return;
+    const c = cd.cust;
+    const months = (c.monthly && c.monthly > 0)
+      ? Math.round((c.total - c.down - (c.earlyDiscount||0)) / c.monthly)
+      : 12;
+    totalGrossProfit += invCap * MONTHLY_PROFIT_RATE * months;
+  });
+  // أضف ربح الأجهزة اليدوية القديمة (افتراض 12 شهر)
+  totalGrossProfit += devCostOld * MONTHLY_PROFIT_RATE * 12;
 
-  // ── الأرباح الموزعة يدوياً ──
-  const manualProfitDistributed = (inv.ops || [])
-    .filter(o => o.type === 'profit')
-    .reduce((s,o) => s + o.amount, 0);
+  // نصيب المستثمر من الربح الإجمالي
+  const investorProfitShare     = Math.round(totalGrossProfit * invPct);
+  // نصيب المتجر
+  const shopProfitShare         = Math.round(totalGrossProfit * (1 - invPct));
 
-  // ── الأرباح المستحقة غير الموزعة بعد ──
-  const pendingProfit = Math.max(0, investorProfitShare - manualProfitDistributed);
-
-  // ── استرداد رأس المال (شرعاً: الربح لا يُقسم إلا بعد رد رأس المال) ──
-  // رأس المال المسترد = min(إجمالي محصّل, رأس المال)
-  const capitalRecovered    = Math.min(totalCollected, inv.capital);
-  const capitalRecoveryPct  = inv.capital > 0
-    ? Math.min(100, Math.round((capitalRecovered / inv.capital) * 100))
+  const capitalRecoveredSoFar   = Math.min(totalCollected, totalInvestorCapitalDeployed);
+  const capitalRecoveryPct      = totalInvestorCapitalDeployed > 0
+    ? Math.min(100, Math.round((capitalRecoveredSoFar / totalInvestorCapitalDeployed)*100))
     : 0;
-  const capitalRemaining    = Math.max(0, inv.capital - capitalRecovered);
-
-  // ── إجمالي المتبقي من تحصيل (من العملاء والأجهزة) ──
+  const capitalRemaining        = Math.max(0, totalInvestorCapitalDeployed - capitalRecoveredSoFar);
   const totalRemainingToCollect = Math.max(0, totalContractAll - totalCollected);
 
+  const manualProfitDistributed = (inv.ops||[])
+    .filter(o => o.type==='profit').reduce((s,o) => s+o.amount, 0);
+  const pendingProfit           = Math.max(0, investorProfitShare - manualProfitDistributed);
+  const realizedProfit          = totalGrossProfit; // الربح الإجمالي للمشروع
+
   return {
-    linked:                    allLinked,
-    activeLinked,
-    totalCollected,
-    totalCost,
-    totalContractAll,
-    realizedProfit,
-    investorProfitShare,
-    manualProfitDistributed,
-    pendingProfit,
-    capitalRecovered,
-    capitalRecoveryPct,
-    capitalRemaining,
-    totalRemainingToCollect,
-    devCollected,
-    devCount: (inv.devices||[]).length
+    linked: allLinked, activeLinked, custDetails,
+    totalCollected, totalContractAll,
+    totalInvestorCapitalDeployed,
+    capitalAvailable,
+    realizedProfit, investorProfitShare, shopProfitShare,
+    manualProfitDistributed, pendingProfit,
+    capitalRecoveredSoFar, capitalRecoveryPct,
+    capitalRemaining, totalRemainingToCollect,
+    totalCost: totalInvestorCapitalDeployed,
+    capitalRecovered: capitalRecoveredSoFar,
   };
 }
 
@@ -7336,21 +7389,27 @@ function openInvestorDetail(id) {
   const detailGrid = document.getElementById('inv-detail-grid');
   if(detailGrid) {
     detailGrid.innerHTML = `
+      <!-- الربح الإجمالي للمشروع -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-bottom:6px">📊 الربح الإجمالي للمشروع (5% شهرياً × رأس المال × المدة)</div>
+        <div style="font-size:1.3rem;font-weight:900;color:var(--blue);text-align:center;font-family:Arial,sans-serif">${Number(s.realizedProfit).toLocaleString('en-US')} ج.م</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+          <div style="background:rgba(52,211,153,0.1);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:0.5rem;color:var(--muted)">نصيب المتجر (${100-invPct}%)</div>
+            <div style="font-size:0.9rem;font-weight:900;color:var(--green);font-family:Arial,sans-serif">${Number(s.shopProfitShare||0).toLocaleString('en-US')}</div>
+          </div>
+          <div style="background:rgba(124,107,255,0.1);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:0.5rem;color:var(--muted)">نصيب المستثمر (${invPct}%)</div>
+            <div style="font-size:0.9rem;font-weight:900;color:var(--accent2);font-family:Arial,sans-serif">${Number(s.investorProfitShare).toLocaleString('en-US')}</div>
+          </div>
+        </div>
+      </div>
+      <!-- تحصيل + مستحق ——-->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:0.52rem;color:var(--muted);margin-bottom:2px">إجمالي محصّل</div>
+          <div style="font-size:0.52rem;color:var(--muted);margin-bottom:2px">محصّل من الأقساط</div>
           <div style="font-size:0.95rem;font-weight:900;color:var(--green);font-family:Arial,sans-serif">${Number(s.totalCollected).toLocaleString('en-US')}</div>
-          <div style="font-size:0.48rem;color:var(--muted)">ج.م من عملاء + أجهزة</div>
-        </div>
-        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:0.52rem;color:var(--muted);margin-bottom:2px">الربح الفعلي المحقق</div>
-          <div style="font-size:0.95rem;font-weight:900;color:var(--blue);font-family:Arial,sans-serif">${Number(s.realizedProfit).toLocaleString('en-US')}</div>
-          <div style="font-size:0.48rem;color:var(--muted)">محصّل - تكلفة الشراء</div>
-        </div>
-        <div style="background:rgba(124,107,255,0.08);border:1px solid rgba(124,107,255,0.2);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:0.52rem;color:var(--muted);margin-bottom:2px">نصيبك من الربح (${invPct}%)</div>
-          <div style="font-size:0.95rem;font-weight:900;color:var(--accent2);font-family:Arial,sans-serif">${Number(s.investorProfitShare).toLocaleString('en-US')}</div>
-          <div style="font-size:0.48rem;color:var(--muted)">ربح × نسبتك</div>
+          <div style="font-size:0.48rem;color:var(--muted)">ج.م</div>
         </div>
         <div style="background:${s.pendingProfit>0?'rgba(251,146,60,0.08)':'rgba(52,211,153,0.05)'};border:1px solid ${s.pendingProfit>0?'rgba(251,146,60,0.3)':'rgba(52,211,153,0.15)'};border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:0.52rem;color:var(--muted);margin-bottom:2px">ربح مستحق لم يُوزَّع</div>
@@ -7382,9 +7441,15 @@ function openInvestorDetail(id) {
         <div style="height:7px;background:var(--surface3);border-radius:4px;overflow:hidden">
           <div id="inv-d-bar" style="height:100%;width:${s.capitalRecoveryPct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:4px;transition:width 0.5s"></div>
         </div>
-        <div style="font-size:0.52rem;color:var(--muted);margin-top:6px;text-align:center">
-          متبقي للتحصيل: <b style="color:var(--accent2);font-family:Arial,sans-serif">${Number(s.totalRemainingToCollect).toLocaleString('en-US')} ج.م</b>
-          من إجمالي عقود <b style="font-family:Arial,sans-serif">${Number(s.totalContractAll).toLocaleString('en-US')} ج.م</b>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+          <div style="background:${s.capitalAvailable>0?'rgba(52,211,153,0.08)':'rgba(124,107,255,0.05)'};border:1px solid ${s.capitalAvailable>0?'rgba(52,211,153,0.25)':'var(--border)'};border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:0.75rem;font-weight:900;color:${s.capitalAvailable>0?'var(--green)':'var(--muted)'};font-family:Arial,sans-serif">${Number(s.capitalAvailable).toLocaleString('en-US')}</div>
+            <div style="font-size:0.48rem;color:var(--muted)">💰 رصيد متاح للتوظيف</div>
+          </div>
+          <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:0.75rem;font-weight:900;color:var(--blue);font-family:Arial,sans-serif">${Number(s.totalInvestorCapitalDeployed).toLocaleString('en-US')}</div>
+            <div style="font-size:0.48rem;color:var(--muted)">📤 موظَّف في عملاء</div>
+          </div>
         </div>
       </div>`;
   }
@@ -7477,40 +7542,164 @@ function addInvestorProfit() {
 }
 window.addInvestorProfit = addInvestorProfit;
 
-// ══ إدارة الأجهزة اليدوية للمستثمر ══
+// ══ إدارة ربط العملاء بالمستثمر ══
 function toggleAddDeviceForm() {
+  const inv = investors.find(x => x.id === activeInvestorId);
+  if(!inv) return;
   const f = document.getElementById('add-device-form');
   if(!f) return;
-  f.style.display = f.style.display === 'none' ? 'block' : 'none';
-  if(f.style.display === 'block') {
-    ['dev-name','dev-cost','dev-total','dev-collected'].forEach(id => {
-      const el = document.getElementById(id); if(el) el.value = '';
-    });
+  const isOpen = f.style.display !== 'none';
+  f.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) {
+    // حساب الرصيد المتاح الفعلي
+    const stats = calcInvestorStats(inv);
+    const available = stats.capitalAvailable || 0;
+
+    // عرض الرصيد فوق الـ select
+    let balanceEl = document.getElementById('dev-balance-info');
+    if(!balanceEl) {
+      balanceEl = document.createElement('div');
+      balanceEl.id = 'dev-balance-info';
+      f.insertBefore(balanceEl, f.firstChild);
+    }
+    balanceEl.innerHTML = available <= 0
+      ? `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px;text-align:center;margin-bottom:10px">
+           <div style="font-size:0.7rem;font-weight:800;color:var(--red)">🚫 الرصيد نفذ</div>
+           <div style="font-size:0.6rem;color:var(--muted)">رأس المال ${Number(inv.capital).toLocaleString('en-US')} ج.م موظَّف بالكامل</div>
+         </div>`
+      : `<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:8px;text-align:center;margin-bottom:10px">
+           <div style="font-size:0.6rem;color:var(--muted)">الرصيد المتاح للتوظيف</div>
+           <div style="font-size:1rem;font-weight:900;color:var(--green);font-family:Arial,sans-serif">${Number(available).toLocaleString('en-US')} ج.م</div>
+           <div style="font-size:0.52rem;color:var(--muted)">من أصل ${Number(inv.capital).toLocaleString('en-US')} ج.م</div>
+         </div>`;
+
+    // ملء قائمة العملاء
+    const sel = document.getElementById('dev-cust-select');
+    const linkedIds = new Set((inv.devices||[]).map(d => d.custId).filter(Boolean));
+    customers.filter(c => c.investorId === inv.id).forEach(c => linkedIds.add(c.id));
+    sel.innerHTML = '<option value="">— اختر عميل —</option>';
+    customers
+      .filter(c => !c.archived && !linkedIds.has(c.id))
+      .sort((a,b) => (a.name||'').localeCompare(b.name||''))
+      .forEach(c => {
+        const needed = Math.max(0, (c.buy||0) - (c.down||0));
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        // توضيح لو الجهاز أكبر من الرصيد
+        if(needed > available && available > 0) {
+          opt.textContent = c.name + ' — ' + (c.prod||'') + ' ⚠️ جزئي (' + Number(available).toLocaleString('en-US') + ' من ' + Number(needed).toLocaleString('en-US') + ')';
+        } else if(needed > 0 && available === 0) {
+          opt.textContent = c.name + ' — ' + (c.prod||'') + ' 🚫 رصيد صفر';
+          opt.style.color = 'var(--red)';
+        } else {
+          opt.textContent = c.name + ' — ' + (c.prod||'') + ' ✅ (' + Number(needed).toLocaleString('en-US') + ' ج.م)';
+        }
+        sel.appendChild(opt);
+      });
+    document.getElementById('dev-preview').style.display = 'none';
   }
 }
 window.toggleAddDeviceForm = toggleAddDeviceForm;
 
+function previewDeviceCustomer() {
+  const sel  = document.getElementById('dev-cust-select');
+  const prev = document.getElementById('dev-preview');
+  const cId  = parseInt(sel.value);
+  if(!cId) { prev.style.display = 'none'; return; }
+  const inv = investors.find(x => x.id === activeInvestorId);
+  const c   = customers.find(x => x.id === cId);
+  if(!c || !inv) return;
+
+  const stats     = calcInvestorStats(inv);
+  const available = stats.capitalAvailable || 0;
+  const needed    = Math.max(0, (c.buy||0) - (c.down||0)); // ما يحتاجه من المستثمر
+  const willFund  = Math.min(needed, available);            // ما سيموّله فعلاً
+  const isPartial = needed > available && available > 0;
+  const isZero    = available === 0;
+
+  const installments = c.payments.reduce((s,p) => s+p.amount, 0);
+  const rem = Math.max(0,(c.total - c.down - (c.earlyDiscount||0)) - installments);
+
+  document.getElementById('dev-prev-name').textContent      = c.name + ' — ' + (c.prod||'');
+  document.getElementById('dev-prev-cost').textContent      =
+    isZero    ? '🚫 0 ج.م (رصيد نفذ)' :
+    isPartial ? `⚠️ ${Number(willFund).toLocaleString('en-US')} ج.م (من ${Number(needed).toLocaleString('en-US')})` :
+                Number(willFund).toLocaleString('en-US') + ' ج.م';
+  document.getElementById('dev-prev-total').textContent     = Number(c.total||0).toLocaleString('en-US') + ' ج.م';
+  document.getElementById('dev-prev-collected').textContent = Number(installments).toLocaleString('en-US') + ' ج.م';
+  document.getElementById('dev-prev-rem').textContent       = Number(rem).toLocaleString('en-US') + ' ج.م';
+
+  // تلوين حقل رأس المال حسب الحالة
+  const costEl = document.getElementById('dev-prev-cost');
+  costEl.style.color = isZero ? 'var(--red)' : isPartial ? 'var(--orange)' : 'var(--green)';
+
+  // ملاحظة تحذيرية
+  let noteEl = document.getElementById('dev-prev-note');
+  if(!noteEl) {
+    noteEl = document.createElement('div');
+    noteEl.id = 'dev-prev-note';
+    noteEl.style.cssText = 'font-size:0.58rem;border-radius:7px;padding:6px 8px;margin-top:8px;text-align:center';
+    prev.appendChild(noteEl);
+  }
+  if(isZero) {
+    noteEl.style.background = 'rgba(239,68,68,0.1)';
+    noteEl.style.color = 'var(--red)';
+    noteEl.textContent = '🚫 الرصيد نفذ — هذا العميل لن يُضاف لحساب المستثمر';
+  } else if(isPartial) {
+    noteEl.style.background = 'rgba(251,146,60,0.1)';
+    noteEl.style.color = 'var(--orange)';
+    noteEl.textContent = `⚠️ الرصيد المتاح ${Number(available).toLocaleString('en-US')} ج.م فقط — المستثمر سيموّل جزء من الجهاز`;
+  } else {
+    noteEl.style.background = 'rgba(52,211,153,0.08)';
+    noteEl.style.color = 'var(--green)';
+    noteEl.textContent = `✅ المستثمر سيموّل ${Number(willFund).toLocaleString('en-US')} ج.م كاملاً`;
+  }
+
+  prev.style.display = 'block';
+}
+window.previewDeviceCustomer = previewDeviceCustomer;
+
 function addInvestorDevice() {
   const inv = investors.find(x => x.id === activeInvestorId);
   if(!inv) return;
-  const name      = (document.getElementById('dev-name').value || '').trim();
-  const cost      = parseFloat(document.getElementById('dev-cost').value) || 0;
-  const total     = parseFloat(document.getElementById('dev-total').value) || 0;
-  const collected = parseFloat(document.getElementById('dev-collected').value) || 0;
-  if(!name) { showToast('برجاء إدخال اسم المنتج','error','fa-exclamation-circle'); return; }
+  const sel = document.getElementById('dev-cust-select');
+  const cId = parseInt(sel.value);
+  if(!cId) { showToast('برجاء اختيار عميل','error','fa-exclamation-circle'); return; }
+  const c = customers.find(x => x.id === cId);
+  if(!c) return;
+
+  // تحقق من الرصيد المتاح
+  const stats     = calcInvestorStats(inv);
+  const available = stats.capitalAvailable || 0;
+  const needed    = Math.max(0, (c.buy||0) - (c.down||0));
+
+  if(available <= 0) {
+    showToast('🚫 الرصيد نفذ — لا يمكن إضافة عملاء جدد', 'error', 'fa-ban');
+    return;
+  }
+
+  // تسجيل كم موّل المستثمر فعلاً في هذا العميل
+  const actualFunded = Math.min(needed, available);
+
   inv.devices = inv.devices || [];
   inv.devices.push({
-    id: Date.now(),
-    name,
-    cost,
-    total,
-    collected,
-    addedAt: fmtDate(new Date())
+    id:          Date.now(),
+    custId:      c.id,
+    name:        c.prod || c.name,
+    addedAt:     fmtDate(new Date()),
+    fundedAmount: actualFunded,   // رأس المال الفعلي في هذا العميل (مسجّل وقت الربط)
+    isPartial:   needed > available
   });
   saveInvestors();
   document.getElementById('add-device-form').style.display = 'none';
+  document.getElementById('dev-preview').style.display = 'none';
   renderInvestorDevices(inv);
-  showToast('✅ تم إضافة الجهاز');
+  // تحديث الصفحة عشان يظهر الرصيد الجديد
+  openInvestorDetail(inv.id);
+  const msg = actualFunded < needed
+    ? `⚠️ تم الربط بتمويل جزئي ${Number(actualFunded).toLocaleString('en-US')} ج.م`
+    : `✅ تم ربط العميل — تمويل ${Number(actualFunded).toLocaleString('en-US')} ج.م`;
+  showToast(msg);
 }
 window.addInvestorDevice = addInvestorDevice;
 
@@ -7529,45 +7718,78 @@ function renderInvestorDevices(inv) {
   if(!el) return;
   const devices = inv.devices || [];
   if(!devices.length) {
-    el.innerHTML = '<div style="font-size:0.65rem;color:var(--muted);text-align:center;padding:8px">لا توجد أجهزة مضافة</div>';
+    el.innerHTML = '<div style="font-size:0.65rem;color:var(--muted);text-align:center;padding:8px">لا يوجد عملاء مربوطين بعد — اضغط إضافة جهاز</div>';
     return;
   }
+
+  // نستخدم calcInvestorStats عشان نجيب invCapital الصح مع مراعاة الرصيد التراكمي
+  const stats = calcInvestorStats(inv);
+  // نعمل map من custId → invCapital
+  const invCapMap = {};
+  (stats.custDetails || []).forEach(cd => { invCapMap[cd.cust.id] = cd.invCapital; });
+
   el.innerHTML = devices.map(d => {
-    const rem    = d.total - d.collected;
-    const pct    = d.total > 0 ? Math.min(100, Math.round((d.collected / d.total) * 100)) : 0;
-    const profit = Math.max(0, d.collected - d.cost);
-    const invP   = Math.round(profit * ((inv.profitPct||40)/100));
+    const c          = d.custId ? customers.find(x => x.id === d.custId) : null;
+    const total      = c ? (c.total||0) : 0;
+    const down       = c ? (c.down||0)  : 0;
+    const buyCost    = c ? (c.buy||0)   : (d.cost||0);
+    const paid       = c ? c.payments.reduce((s,p)=>s+p.amount,0) : 0; // أقساط بس (بدون مقدم)
+    const rem        = c ? Math.max(0,(c.total-c.down-(c.earlyDiscount||0))-c.payments.reduce((s,p)=>s+p.amount,0)) : 0;
+
+    // رأس مال المستثمر الفعلي في هذا الجهاز (مع مراعاة الرصيد التراكمي)
+    const invCapital = c ? (invCapMap[c.id] || 0) : Math.max(0, buyCost - down);
+    const cost       = invCapital;
+
+    // الربح = أقساط - رأس مال المستثمر (المقدم مش من حسابه)
+    const profit  = Math.max(0, paid - invCapital);
+    const invP    = Math.round(profit * ((inv.profitPct||40)/100));
+    const pct     = total > 0 ? Math.min(100, Math.round(((paid+down)/total)*100)) : 0;
+
+    const custName= c ? c.name       : (d.name||'—');
+    const prodName= c ? (c.prod||'—'): (d.name||'—');
+    const custCode= c ? (c.custCode||'—') : '—';
+    const statusColor = rem<=0 ? 'var(--green)' : 'var(--orange)';
+    const statusText  = rem<=0 ? '✅ منتهي' : Number(rem).toLocaleString('en-US')+' ج.م';
+
+    // تنبيه لو الرصيد ما وفاش تكلفة الجهاز كاملة
+    const partialNote = (c && invCapital < Math.max(0, buyCost-down))
+      ? `<div style="font-size:0.48rem;color:var(--orange);margin-top:3px">⚠️ موّلت ${Number(invCapital).toLocaleString('en-US')} من ${Number(buyCost-down).toLocaleString('en-US')} (الرصيد ما وفاش)</div>`
+      : '';
+
     return `
-    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
-        <div>
-          <div style="font-size:0.75rem;font-weight:800;color:var(--text)">${d.name}</div>
-          <div style="font-size:0.55rem;color:var(--muted);margin-top:1px">أضيف ${d.addedAt}</div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px">
+        <div style="flex:1">
+          <div style="font-size:0.72rem;font-weight:800;color:var(--text)">${custName}</div>
+          <div style="font-size:0.55rem;color:var(--muted);margin-top:1px">📦 ${prodName} · <b style="color:var(--accent2)">${custCode}</b></div>
+          <div style="font-size:0.5rem;color:var(--muted)">ربط: ${d.addedAt}</div>
+          ${partialNote}
         </div>
-        <button onclick="deleteInvestorDevice(${d.id})" style="padding:3px 7px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:var(--red);font-size:0.55rem;cursor:pointer;font-family:'Cairo',sans-serif">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${c ? `<button onclick="openCustomer(${c.id})" style="padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--accent2);font-size:0.52rem;cursor:pointer;font-family:'Cairo',sans-serif"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}
+          <button onclick="deleteInvestorDevice(${d.id})" style="padding:3px 7px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:var(--red);font-size:0.52rem;cursor:pointer;font-family:'Cairo',sans-serif"><i class="fa-solid fa-trash"></i></button>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;text-align:center;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;margin-bottom:6px">
         <div style="background:rgba(124,107,255,0.08);border-radius:6px;padding:5px">
-          <div style="font-size:0.65rem;font-weight:800;color:var(--accent);font-family:Arial,sans-serif">${Number(d.cost).toLocaleString('en-US')}</div>
-          <div style="font-size:0.45rem;color:var(--muted)">التكلفة</div>
+          <div style="font-size:0.62rem;font-weight:800;color:var(--accent);font-family:Arial,sans-serif">${Number(cost).toLocaleString('en-US')}</div>
+          <div style="font-size:0.42rem;color:var(--muted)">رأس مالك فيه</div>
         </div>
         <div style="background:rgba(59,130,246,0.08);border-radius:6px;padding:5px">
-          <div style="font-size:0.65rem;font-weight:800;color:var(--blue);font-family:Arial,sans-serif">${Number(d.total).toLocaleString('en-US')}</div>
-          <div style="font-size:0.45rem;color:var(--muted)">إجمالي العقد</div>
+          <div style="font-size:0.62rem;font-weight:800;color:var(--blue);font-family:Arial,sans-serif">${Number(total).toLocaleString('en-US')}</div>
+          <div style="font-size:0.42rem;color:var(--muted)">إجمالي العقد</div>
         </div>
         <div style="background:rgba(52,211,153,0.08);border-radius:6px;padding:5px">
-          <div style="font-size:0.65rem;font-weight:800;color:var(--green);font-family:Arial,sans-serif">${Number(d.collected).toLocaleString('en-US')}</div>
-          <div style="font-size:0.45rem;color:var(--muted)">محصّل</div>
+          <div style="font-size:0.62rem;font-weight:800;color:var(--green);font-family:Arial,sans-serif">${Number(paid).toLocaleString('en-US')}</div>
+          <div style="font-size:0.42rem;color:var(--muted)">محصّل (أقساط)</div>
         </div>
         <div style="background:rgba(251,146,60,0.08);border-radius:6px;padding:5px">
-          <div style="font-size:0.65rem;font-weight:800;color:var(--orange);font-family:Arial,sans-serif">${Number(invP).toLocaleString('en-US')}</div>
-          <div style="font-size:0.45rem;color:var(--muted)">ربحك ${inv.profitPct||40}%</div>
+          <div style="font-size:0.62rem;font-weight:800;color:var(--orange);font-family:Arial,sans-serif">${Number(invP).toLocaleString('en-US')}</div>
+          <div style="font-size:0.42rem;color:var(--muted)">ربحك ${inv.profitPct||40}%</div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--muted);margin-bottom:4px">
-        <span>متبقي: <b style="color:${rem<=0?'var(--green)':'var(--orange)'};font-family:Arial,sans-serif">${rem<=0?'✅ منتهي':Number(rem).toLocaleString('en-US')+' ج.م'}</b></span>
+        <span>متبقي: <b style="color:${statusColor};font-family:Arial,sans-serif">${statusText}</b></span>
         <span style="font-family:Arial,sans-serif">${pct}%</span>
       </div>
       <div style="height:4px;background:var(--surface3);border-radius:3px;overflow:hidden">
