@@ -3995,6 +3995,67 @@ function processEarlySettlement() {
   c.payments.push({ref: genPayRef(c), amount:amt, date:fmtDate(new Date()), fullDate:new Date().toISOString(), note:'سداد مبكر (تسوية)', by: currentUser.isAdmin ? 'مدير' : (currentUser.name||'موظف')});
   c.earlyDiscount = (c.earlyDiscount||0) + (rem-amt);
   c.lastActionDate = Date.now();
+  if(window._incTxCount) window._incTxCount();
+
+  // ══ ربط السداد المبكر بحساب المستثمر ══
+  const settledCustId = c.id;
+  investors.forEach(inv => {
+    // هل هذا العميل مرتبط بهذا المستثمر؟
+    const isLinked = (c.investorId === inv.id) ||
+      (inv.devices||[]).some(d => d.custId === settledCustId);
+    if(!isLinked) return;
+
+    // رأس مال المستثمر في هذا العميل = تكلفة - مقدم (بحد الرصيد المتاح وقت الربط)
+    const device = (inv.devices||[]).find(d => d.custId === settledCustId);
+    const invCapital = device && device.fundedAmount
+      ? device.fundedAmount
+      : Math.max(0, (c.buy||0) - (c.down||0));
+
+    // الربح الفعلي للعميل = إجمالي العقد - سعر الكاش
+    const totalProfit  = Math.max(0, (c.total||0) - (c.sell||c.total||0));
+    // الأشهر الفعلية اللي مرت
+    const start        = new Date(c.receiveDate || c.date || Date.now());
+    const now          = new Date();
+    const monthsActual = Math.max(0,
+      (now.getFullYear() - start.getFullYear()) * 12 +
+      (now.getMonth() - start.getMonth())
+    );
+    // الأشهر الكاملة للعقد
+    const totalMonths  = (c.monthly && c.monthly > 0)
+      ? Math.round((c.total - c.down - (c.earlyDiscount||0)) / c.monthly)
+      : 12;
+    // نسبة الربح الفعلي = أشهر مرت / أشهر كاملة
+    const profitRatio  = totalMonths > 0 ? Math.min(1, monthsActual / totalMonths) : 1;
+    const actualProfit = Math.round(totalProfit * profitRatio);
+    const invProfitEarned = Math.round(actualProfit * ((inv.profitPct||40)/100));
+
+    // تسجيل في سجل العمليات: رأس المال رجع + الربح الفعلي
+    inv.ops = inv.ops || [];
+    inv.ops.push({
+      type:      'early_settle',
+      custId:    settledCustId,
+      custName:  c.name,
+      prod:      c.prod || '',
+      amount:    invCapital,          // رأس المال اللي رجع
+      profit:    invProfitEarned,     // الربح الفعلي المستحق
+      months:    monthsActual,
+      totalMonths,
+      date:      fmtDate(new Date()),
+      note:      'سداد مبكر — رأس المال عاد للمحفظة'
+    });
+
+    // رأس المال يرجع للمحفظة (نحذف الجهاز من devices ونزوّد الـ capitalReturned)
+    if(device) {
+      device.returned   = true;        // علّم إن رأس ماله رجع
+      device.returnedAt = fmtDate(new Date());
+      device.returnedCapital = invCapital;
+      device.earnedProfit    = invProfitEarned;
+    }
+
+    saveInvestors();
+    showToast(`💰 رأس مال المستثمر ${inv.name} (${fmt(invCapital)} ج.م) عاد للمحفظة`, 'success', 'fa-rotate-left');
+  });
+
   save(); document.getElementById('settle-amount').value = '';
   logEdit('سداد مبكر', c.name, `${fmt(amt)} ج.م`);
   closeM('settle-modal'); openPaymentModal(activeCustomerId); render();
@@ -7175,7 +7236,11 @@ function calcInvestorStats(inv) {
   // ══ حساب كل عميل على حدة بالمنطق الصح ══
   // المستثمر موّل: min(تكلفة - مقدم, الرصيد المتاح وقت إضافة الجهاز)
   // لكن الرصيد المتاح بيُحسب تراكمياً — نحسبه بالترتيب
-  let remainingCapital = capital;  // الرصيد المتاح يبدأ برأس المال كامل
+  // رأس المال المُرجَع من السداد المبكر يُضاف للرصيد المتاح
+  const earlyReturnedCapital = (inv.devices||[])
+    .filter(d => d.returned)
+    .reduce((s,d) => s + (d.returnedCapital||0), 0);
+  let remainingCapital = capital + earlyReturnedCapital; // الرصيد يشمل المُرجَع
 
   let totalInvestorCapitalDeployed = 0; // مجموع ما وظّفه المستثمر فعلاً
   let totalInstallmentsCollected   = 0; // أقساط محصّلة (من فلوس المستثمر فقط، بدون مقدم)
@@ -7213,7 +7278,7 @@ function calcInvestorStats(inv) {
     };
   });
 
-  // ══ أجهزة devices بدون custId (يدوية قديمة) ══
+  // ══ أجهزة devices بدون custId (يدوية قديمة) + معالجة السداد المبكر ══
   let devCollectedOld = 0, devCostOld = 0, devTotalOld = 0;
   (inv.devices||[]).forEach(d => {
     if(!d.custId) {
@@ -7225,6 +7290,11 @@ function calcInvestorStats(inv) {
       devCollectedOld += (d.collected||0);
       totalInstallmentsCollected += (d.collected||0);
       totalContractAll           += (d.total||0);
+    } else if(d.returned) {
+      // سداد مبكر — رأس المال رجع للمحفظة بالفعل عبر earlyReturnedCapital
+      // نضيف الربح الفعلي المكتسب فقط
+      devCollectedOld += (d.earnedProfit||0);
+      totalInstallmentsCollected += (d.earnedProfit||0);
     }
   });
 
@@ -7505,7 +7575,8 @@ function openInvestorDetail(id) {
     opsEl.innerHTML = [...inv.ops].reverse().map(o => `
       <div class="pay-row">
         <div style="font-weight:700;color:${o.type==='profit'?'var(--green)':'var(--muted)'}">
-          ${o.type==='profit'?'💰 ربح موزع':'📌'} <span style="font-family:Arial,sans-serif">${Number(o.amount).toLocaleString('en-US')}</span> ج.م
+          ${o.type==='profit'?'💰 ربح موزع':o.type==='early_settle'?'🔄 سداد مبكر':'📌'} <span style="font-family:Arial,sans-serif">${Number(o.amount).toLocaleString('en-US')}</span> ج.م
+          ${o.type==='early_settle'?`<span style="font-size:0.55rem;color:var(--green)"> + ربح ${Number(o.profit||0).toLocaleString('en-US')} ج.م (${o.months} شهر من ${o.totalMonths})</span>`:''}
         </div>
         <div style="font-size:0.65rem;color:var(--muted)">${o.note||'--'}</div>
         <div style="font-size:0.65rem;color:var(--muted)">${o.date}</div>
@@ -7748,8 +7819,11 @@ function renderInvestorDevices(inv) {
     const custName= c ? c.name       : (d.name||'—');
     const prodName= c ? (c.prod||'—'): (d.name||'—');
     const custCode= c ? (c.custCode||'—') : '—';
-    const statusColor = rem<=0 ? 'var(--green)' : 'var(--orange)';
-    const statusText  = rem<=0 ? '✅ منتهي' : Number(rem).toLocaleString('en-US')+' ج.م';
+    const isReturned  = d.returned === true;
+    const statusColor = isReturned ? 'var(--blue)' : rem<=0 ? 'var(--green)' : 'var(--orange)';
+    const statusText  = isReturned
+      ? `🔄 سداد مبكر — رأس مال ${Number(d.returnedCapital||0).toLocaleString('en-US')} ج.م عاد للمحفظة`
+      : rem<=0 ? '✅ منتهي' : Number(rem).toLocaleString('en-US')+' ج.م';
 
     // تنبيه لو الرصيد ما وفاش تكلفة الجهاز كاملة
     const partialNote = (c && invCapital < Math.max(0, buyCost-down))
